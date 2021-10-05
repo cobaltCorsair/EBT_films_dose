@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import tifffile as tifimage
+from PyQt5.QtCore import pyqtSignal
 from scipy.optimize import curve_fit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
@@ -128,7 +129,15 @@ class Dose:
     #     plt.show()
 
 
+class Doses_and_paths:
+    doses = list()
+    paths = list()
+    sigma = int()
+
+
 class Form(QtWidgets.QWidget, Ui_Form):
+    openDialog = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
@@ -139,6 +148,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_2.clicked.connect(self.dynamic_add_fields)
         self.pushButton_3.clicked.connect(self.dynamic_delete_fields)
         self.pushButton_4.clicked.connect(self.get_all_params_widgets)
+        self.pushButton_5.clicked.connect(self.test)
 
     def search_file(self):
         """Поиск файла"""
@@ -178,6 +188,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
     def get_all_params_widgets(self):
         doses = []
         paths = []
+        sigma = self.spinBox.value()
         widgets = (self.gridLayout_3.itemAt(i).widget() for i in range(self.gridLayout_3.count()))
         self.all_widgets = widgets
         for widget in widgets:
@@ -187,8 +198,32 @@ class Form(QtWidgets.QWidget, Ui_Form):
             if isinstance(widget, QDoubleSpinBox):
                 paths.append(widget.value())
                 print("SpinBox: %s" % widget.value())
+
+        Doses_and_paths.doses = doses
+        Doses_and_paths.paths = paths
+        Doses_and_paths.sigma = sigma
+
         print(doses)
         print(paths)
+        print(sigma)
+
+    def create_widgets_second_open(self):
+        data_count = len(Doses_and_paths.doses)
+        print(data_count)
+        if self.gridLayout_3.count() >= 5 and data_count > 1:
+            for i in range(data_count):
+                self.dynamic_add_fields()
+
+
+    def test(self):
+        a = Doses_and_paths.doses
+        b = Doses_and_paths.paths
+        c = Doses_and_paths.sigma
+        print(a, b, c)
+
+
+    def closeEvent(self, event):
+        self.openDialog.emit()
 
 
 class CalcUI(QtWidgets.QMainWindow):
@@ -213,9 +248,15 @@ class CalcUI(QtWidgets.QMainWindow):
             # start
             self.start_calc()
 
+    def test(self):
+        print('test connect')
+
     def get_dialog_window(self):
         self.form = Form()
+        self.form.create_widgets_second_open()
+        # self.form.openDialog.connect(self.test)
         self.form.show()
+
 
     def search_file(self):
         """Поиск файла"""
