@@ -170,7 +170,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.gridLayout_3.addWidget(qline_edit)
         self.gridLayout_3.addWidget(push_button)
 
-        #push_button.clicked.connect(self.search_file)
+        # push_button.clicked.connect(self.search_file)
         push_button.clicked.connect(lambda: self.get_empty_field_file(qline_edit))
 
         self.widget_count += 1
@@ -211,16 +211,14 @@ class Form(QtWidgets.QWidget, Ui_Form):
         data_count = len(Doses_and_paths.doses)
         print(data_count)
         if self.gridLayout_3.count() >= 5 and data_count > 1:
-            for i in range(data_count):
+            for i in range(data_count - 1):
                 self.dynamic_add_fields()
-
 
     def test(self):
         a = Doses_and_paths.doses
         b = Doses_and_paths.paths
         c = Doses_and_paths.sigma
         print(a, b, c)
-
 
     def closeEvent(self, event):
         self.openDialog.emit()
@@ -237,6 +235,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.empty_field_file = None
         # empty field
         self.ui.pushButton_5.clicked.connect(self.get_empty_field_file)
+        self.ui.pushButton_7.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
 
     def get_empty_field_file(self):
@@ -254,9 +253,20 @@ class CalcUI(QtWidgets.QMainWindow):
     def get_dialog_window(self):
         self.form = Form()
         self.form.create_widgets_second_open()
+        self.insert_data_in_fields()
         # self.form.openDialog.connect(self.test)
         self.form.show()
 
+    def insert_data_in_fields(self):
+        widgets = [self.form.gridLayout_3.itemAt(i).widget() for i in range(self.form.gridLayout_3.count())]
+        lineedits = [i for i in widgets if isinstance(i, QLineEdit)]
+        spinboxes = [i for i in widgets if isinstance(i, QDoubleSpinBox)]
+
+        for path, dose, line, spin in zip(Doses_and_paths.doses, Doses_and_paths.paths, lineedits, spinboxes):
+            if isinstance(line, QLineEdit):
+                line.setText(path)
+            if isinstance(spin, QDoubleSpinBox):
+                spin.setValue((float(dose)))
 
     def search_file(self):
         """Поиск файла"""
