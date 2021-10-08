@@ -1,5 +1,6 @@
 # Python 3.7
 # -*- coding: utf-8 -*-
+import random
 import sys
 
 import numpy as np
@@ -8,10 +9,13 @@ import numpy as np
 import os
 import tifffile as tifimage
 from PyQt5.QtCore import pyqtSignal
+from numpy import ndarray
 from scipy.optimize import curve_fit
 
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QLineEdit, QCheckBox, QDoubleSpinBox
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QLineEdit, QCheckBox, QDoubleSpinBox, QSizePolicy
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 
@@ -21,11 +25,14 @@ class Dose:
     Calculate dose
     """
 
-    def __init__(self, zero_dose, calibrate_list, irradiation_film, sigma):
+    def __init__(self, zero_dose, calibrate_list, doses_list, irradiation_film, sigma):
         self.zero_dose = zero_dose
         self.calibrate_list = calibrate_list
         self.irradiation_film = irradiation_film
+        self.setting_doses = doses_list
         self.sigma = sigma
+
+        self.calculation_doses = []
 
         self.od_blank = None
         self.p_opt = None
@@ -56,43 +63,42 @@ class Dose:
         self.od_blank = odBlank
         return odBlank
 
-    def find_best_fit(self, pathToFilm, odZeroDose, odBlank):
+    def calc_dose(self, path_to_film):
         """
-        Find best fit to dose-OD points
+        Обработчик файлов снимков
         """
-        # Тут должен быть обработчик для каждого файла из списка
-        # Берем каждый файл из словаря, обрабатываем его в соответствии с формулой
-        '''
-        odBlank: среднее значение красного канала "пустого поля"
-        odZeroDose: для этого числа лучше завести копию этой функции без последней строки
-                    это значение дальше используем внутри функции
-        '''
-
-        im = tifimage.imread(pathToFilm)
+        im = tifimage.imread(path_to_film)
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
-        odCurrentDose = np.mean(imarray)
-        odCurrentDose = np.log10(odBlank / odCurrentDose)
-        odCurrentDose = odCurrentDose - odZeroDose
+        od_current_dose = np.mean(imarray)
+        od_current_dose = np.log10(self.od_blank / od_current_dose)
 
-        return odCurrentDose
-    #
-    # def draw_curve(self):
-    #     """
-    #
-    #     """
-    #     popt, pcov = curve_fit(self.fit_func, calibrList[:, 0], calibrList[:, 1], sigma=calibrList[:, 0] * self.sigma)
-    #
-    #     fig, ax = plt.subplots(figsize=(9, 5))
-    #     ax.plot(calibrList[:, 0], calibrList[:, 1], ".k", markersize=6, label="Измерения")
-    #     ax.plot(calibrList[:, 0], self.fit_func(calibrList[:, 0], *popt))
-    #     # ax.set_xlim(5000,44000)
-    #     # ax.set_ylim(-1,np.amax(calibrList[;,1])+1)
-    #     ax.grid(True, linestyle="-.")
-    #     ax.set_ylabel('Поглощенная доза, Гр')
-    #     ax.set_xlabel('Относительная оптическая плотность')
-    #     plt.show()
-    #
+        return od_current_dose
+
+    def find_best_fit(self, path_to_film):
+        od_current_dose = self.calc_dose(path_to_film) - self.zero_dose
+        # print(od_current_dose)
+        self.calculation_doses.append(od_current_dose)
+        # return od_current_dose
+
+    def calculate_calibrate_film(self):
+        # сначала считаем нулевую дозу
+        self.zero_dose = self.calc_dose(self.zero_dose)
+        # затем считаем для каждого файла с использованием посчитанной нулевой
+        for i in self.calibrate_list:
+            self.find_best_fit(i)
+
+    def draw_curve(self):
+        popt, pcov = curve_fit(self.fit_func, np.array(self.calculation_doses), np.array(self.setting_doses),
+                               sigma=np.array(self.calculation_doses) * (self.sigma / 100))
+        fig, ax = plt.subplots(figsize=(9, 5))
+        ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
+        ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *popt))
+        ax.grid(True, linestyle="-.")
+        ax.set_ylabel('Поглощенная доза, Гр')
+        ax.set_xlabel('относительная оптическая плотность')
+        plt.show()
+
     #     self.p_opt = popt
     #
     # def user_image(self):
@@ -128,8 +134,7 @@ class Dose:
     #     cbar = fig.colorbar(im3, ax=ax1, orientation="vertical")
     #     plt.show()
 
-
-class Doses_and_paths:
+class DosesAndPaths:
     doses = list()
     paths = list()
     sigma = int()
@@ -148,7 +153,6 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_2.clicked.connect(self.dynamic_add_fields)
         self.pushButton_3.clicked.connect(self.dynamic_delete_fields)
         self.pushButton_4.clicked.connect(self.get_all_params_widgets)
-        self.pushButton_5.clicked.connect(self.test)
 
     def search_file(self):
         """Поиск файла"""
@@ -194,31 +198,21 @@ class Form(QtWidgets.QWidget, Ui_Form):
         for widget in widgets:
             if isinstance(widget, QLineEdit):
                 print("Linedit: %s" % widget.text())
-                doses.append(widget.text())
+                paths.append(widget.text())
             if isinstance(widget, QDoubleSpinBox):
-                paths.append(widget.value())
+                doses.append(widget.value())
                 print("SpinBox: %s" % widget.value())
 
-        Doses_and_paths.doses = doses
-        Doses_and_paths.paths = paths
-        Doses_and_paths.sigma = sigma
-
-        print(doses)
-        print(paths)
-        print(sigma)
+        DosesAndPaths.doses = doses
+        DosesAndPaths.paths = paths
+        DosesAndPaths.sigma = sigma
 
     def create_widgets_second_open(self):
-        data_count = len(Doses_and_paths.doses)
+        data_count = len(DosesAndPaths.doses)
         print(data_count)
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
                 self.dynamic_add_fields()
-
-    def test(self):
-        a = Doses_and_paths.doses
-        b = Doses_and_paths.paths
-        c = Doses_and_paths.sigma
-        print(a, b, c)
 
     def closeEvent(self, event):
         self.openDialog.emit()
@@ -237,6 +231,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_5.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_7.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
+        self.ui.pushButton_4.clicked.connect(self.start_calc)
 
     def get_empty_field_file(self):
         self.ui.lineEdit_2.setText(self.search_file())
@@ -244,8 +239,6 @@ class CalcUI(QtWidgets.QMainWindow):
         if len(self.ui.lineEdit_2.text()) != 0:
             self.empty_field_file = self.ui.lineEdit_2.text()
             self.ui.lineEdit_2.setDisabled(True)
-            # start
-            self.start_calc()
 
     def test(self):
         print('test connect')
@@ -262,7 +255,7 @@ class CalcUI(QtWidgets.QMainWindow):
         lineedits = [i for i in widgets if isinstance(i, QLineEdit)]
         spinboxes = [i for i in widgets if isinstance(i, QDoubleSpinBox)]
 
-        for path, dose, line, spin in zip(Doses_and_paths.doses, Doses_and_paths.paths, lineedits, spinboxes):
+        for path, dose, line, spin in zip(DosesAndPaths.paths, DosesAndPaths.doses, lineedits, spinboxes):
             if isinstance(line, QLineEdit):
                 line.setText(path)
             if isinstance(spin, QDoubleSpinBox):
@@ -278,7 +271,10 @@ class CalcUI(QtWidgets.QMainWindow):
         #     return True
 
     def start_calc(self):
-        Dose(self.empty_field_file, '', '', 0).red_chanel_calc()
+        calc = Dose(self.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses, '', DosesAndPaths.sigma)
+        calc.red_chanel_calc()
+        calc.calculate_calibrate_film()
+        calc.draw_curve()
 
 
 app = QtWidgets.QApplication([])
