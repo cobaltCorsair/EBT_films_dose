@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import tifffile as tifimage
+import xdata as xdata
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QPixmap
 from numpy import ndarray
@@ -18,8 +19,30 @@ from PyQt5.QtWidgets import QFileDialog, QMessageBox, QLineEdit, QCheckBox, QDou
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+import matplotlib.widgets
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
+
+
+class GraphicsPlotting:
+    @staticmethod
+    def draw_dose_map(z):
+        ax = application.figure_map.add_subplot(111)
+        im3 = ax.imshow(z, cmap="jet", vmin=0, vmax=2., interpolation="gaussian")
+        application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
+        application.canvas_map.draw()
+
+    @staticmethod
+    def draw_curve(self, func, calculation_doses, setting_doses, p_opt):
+        ax = application.figure_graph.add_subplot(111)
+        # ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
+        # ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *self.p_opt))
+        ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Измерения")
+        ax.plot(calculation_doses, func(setting_doses, *p_opt))
+        ax.grid(True, linestyle="-.")
+        ax.set_ylabel('Поглощенная доза, Гр')
+        ax.set_xlabel('относительная оптическая плотность')
+        application.canvas_graph.draw()
 
 
 class Dose:
@@ -91,21 +114,10 @@ class Dose:
             self.find_best_fit(i)
 
         p_opt, p_cov = curve_fit(self.fit_func, np.array(self.calculation_doses), np.array(self.setting_doses),
-                               sigma=np.array(self.calculation_doses) * (self.sigma / 100))
+                                 sigma=np.array(self.calculation_doses) * (self.sigma / 100))
         self.p_opt = p_opt
 
-    def draw_curve(self):
-        #fig, ax = plt.subplots(figsize=(9, 5))
-        ax = application.figure_graph.add_subplot(111)
-        ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
-        ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *self.p_opt))
-        ax.grid(True, linestyle="-.")
-        ax.set_ylabel('Поглощенная доза, Гр')
-        ax.set_xlabel('относительная оптическая плотность')
-        application.canvas_graph.draw()
-        #plt.show()
-
-    def draw_dose_map(self):
+    def calc_dose_map(self):
         """
         Working with user image
         """
@@ -116,7 +128,6 @@ class Dose:
 
         print("\nShape of scanned film:", np.shape(imarray))
 
-        z = []
         counter = 0
         print("\nPrepearing your file:\n")
 
@@ -124,26 +135,23 @@ class Dose:
             x = np.log10(self.od_blank / i)
             x = x - self.zero_dose
             x = self.fit_func(x, *self.p_opt)
-            z = np.append(z, x)
+            DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
             counter = counter + 1
             if counter % 10000 == 0:
                 print("Iteration ", counter, "/", np.size(imarray))
 
-        z = z.reshape(np.shape(imarray))
+        DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
         print("\nDose calculation ended!!!\n")
 
-        #fig, ax = plt.subplots(figsize=(9, 5))
-        ax = application.figure_map.add_subplot(111)
-        im3 = ax.imshow(z, cmap="jet", vmin=0, vmax=2., interpolation="gaussian")
-        application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
-        application.canvas_map.draw()
-        #plt.show()
+        GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
+
 
 class DosesAndPaths:
     doses = list()
     paths = list()
     sigma = int()
+    z = []
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -162,7 +170,8 @@ class Form(QtWidgets.QWidget, Ui_Form):
 
     def search_file(self):
         """Поиск файла"""
-        file_name = QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
+        file_name = \
+            QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def get_empty_field_file(self, line):
@@ -254,6 +263,16 @@ class CalcUI(QtWidgets.QMainWindow):
         # irradiate film
         self.irrad_film_file = None
 
+        # self.canvas_map.mpl_connect("motion_notify_event", self.on_press)
+        # self.canvas_map.mpl_connect("button_release_event", self.on_release)
+        # self.canvas_map.mpl_connect("motion_notify_event", self.on_move)
+        # self.canvas_map.mpl_connect("button_press_event", self.onclick)
+        self.ax = self.figure_map.add_subplot(111)
+        # Set cursor
+        self.cursor = matplotlib.widgets.Cursor(self.ax, useblit=False, color='red', linewidth=1)
+        self.canvas_map.mpl_connect('button_press_event', self.onclick)
+        self.canvas_map.draw()
+
         self.ui.pushButton_5.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_7.clicked.connect(self.get_irrad_film_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
@@ -280,6 +299,49 @@ class CalcUI(QtWidgets.QMainWindow):
     def test(self):
         print('test connect')
 
+    def onclick(self, event):
+        self.cursor.onmove(event)
+        # print(event.ydata, event.xdata)
+        x, y = int(event.xdata), int(event.ydata)
+        slice_y = DosesAndPaths.z[:, x]
+        slice_x = DosesAndPaths.z[y, :]
+
+        ax2 = self.figure_map.add_subplot(222, sharex=self.ax)
+        ax2.plot(slice_x)
+        self.canvas_map.draw()
+
+    # def onclick(self, event):
+    #     self.figure_map.clf()
+    #     GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
+    #     ax = self.figure_map.add_subplot(111)
+    #     im1 = ax.axhline(y=event.ydata, c='black', linestyle="-.")
+    #     im2 = ax.axvline(x=event.xdata, c='black', linestyle="-.")
+    #     self.canvas_map.draw()
+
+    def on_press(self, event):
+        print("press")
+        print("event.xdata", event.xdata)
+        print("event.ydata", event.ydata)
+        print("event.inaxes", event.inaxes)
+        print("x", event.x)
+        print("y", event.y)
+
+    def on_release(self, event):
+        print("release:")
+        print("event.xdata", event.xdata)
+        print("event.ydata", event.ydata)
+        print("event.inaxes", event.inaxes)
+        print("x", event.x)
+        print("y", event.y)
+
+    def on_move(self, event):
+        print("move")
+        print("event.xdata", event.xdata)
+        print("event.ydata", event.ydata)
+        print("event.inaxes", event.inaxes)
+        print("x", event.x)
+        print("y", event.y)
+
     def get_dialog_window(self):
         self.form = Form()
         self.form.create_widgets_second_open()
@@ -302,15 +364,17 @@ class CalcUI(QtWidgets.QMainWindow):
 
     def search_file(self):
         """Поиск файла"""
-        file_name = QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
+        file_name = \
+            QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def start_calc(self):
-        calc = Dose(self.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses, self.irrad_film_file, DosesAndPaths.sigma)
+        calc = Dose(self.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses, self.irrad_film_file,
+                    DosesAndPaths.sigma)
         calc.red_chanel_calc()
         calc.calculate_calibrate_film()
-        #calc.draw_curve()
-        calc.draw_dose_map()
+        # calc.draw_curve()
+        calc.calc_dose_map()
         self.insert_tiff_file()
 
 
