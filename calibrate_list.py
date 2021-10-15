@@ -102,4 +102,4 @@ class Ui_Form(object):
         self.label_3.setText(_translate("Form", "File path"))
         self.label.setText(_translate("Form", "Dose"))
         self.pushButton_4.setText(_translate("Form", "OK"))
-        self.pushButton_5.setText(_translate("Form", "Cancel"))
+        self.pushButton_5.setText(_translate("Form", "Draw curve"))

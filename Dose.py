@@ -144,9 +144,9 @@ class Ui_MainWindow(object):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.label_10.setText(_translate("MainWindow", "Calibrate list"))
-        self.label_11.setText(_translate("MainWindow", "Plot by lines"))
+        self.label_11.setText(_translate("MainWindow", "Get old save"))
         self.pushButton_8.setText(_translate("MainWindow", "Select"))
-        self.pushButton_3.setText(_translate("MainWindow", "Draw"))
+        self.pushButton_3.setText(_translate("MainWindow", "Load"))
         self.pushButton_5.setText(_translate("MainWindow", "Empty field file"))
         self.pushButton_7.setText(_translate("MainWindow", "Iirradiate film"))
         self.pushButton_4.setText(_translate("MainWindow", "Calculate dose"))

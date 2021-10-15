@@ -22,6 +22,8 @@ from matplotlib.figure import Figure
 import matplotlib.widgets
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
+from Axes import Ui_Form as Axes_form
+from Curve import Ui_Form as Curve_form
 
 
 class GraphicsPlotting:
@@ -33,8 +35,8 @@ class GraphicsPlotting:
         application.canvas_map.draw()
 
     @staticmethod
-    def draw_curve(self, func, calculation_doses, setting_doses, p_opt):
-        ax = application.figure_graph.add_subplot(111)
+    def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph):
+        ax = figure_graph.add_subplot(111)
         # ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
         # ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *self.p_opt))
         ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Измерения")
@@ -42,7 +44,7 @@ class GraphicsPlotting:
         ax.grid(True, linestyle="-.")
         ax.set_ylabel('Поглощенная доза, Гр')
         ax.set_xlabel('относительная оптическая плотность')
-        application.canvas_graph.draw()
+        canvas_graph.draw()
 
 
 class Dose:
@@ -57,12 +59,8 @@ class Dose:
         self.setting_doses = doses_list
         self.sigma = sigma
 
-        self.calculation_doses = []
-
-        self.od_blank = None
-        self.p_opt = None
-
-    def fit_func(self, od, a, b, c):
+    @staticmethod
+    def fit_func(od, a, b, c):
         """
         Fitting function for calibration curve
         :param od:
@@ -85,7 +83,7 @@ class Dose:
         odBlank = np.mean(imarray)
         print("Blank field value: ", round(odBlank, 2))
 
-        self.od_blank = odBlank
+        DosesAndPaths.od_blank = odBlank
         return odBlank
 
     def calc_dose(self, path_to_film):
@@ -96,14 +94,14 @@ class Dose:
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
         od_current_dose = np.mean(imarray)
-        od_current_dose = np.log10(self.od_blank / od_current_dose)
+        od_current_dose = np.log10(DosesAndPaths.od_blank / od_current_dose)
 
         return od_current_dose
 
     def find_best_fit(self, path_to_film):
         od_current_dose = self.calc_dose(path_to_film) - self.zero_dose
         # print(od_current_dose)
-        self.calculation_doses.append(od_current_dose)
+        DosesAndPaths.calculation_doses.append(od_current_dose)
         # return od_current_dose
 
     def calculate_calibrate_film(self):
@@ -113,9 +111,9 @@ class Dose:
         for i in self.calibrate_list:
             self.find_best_fit(i)
 
-        p_opt, p_cov = curve_fit(self.fit_func, np.array(self.calculation_doses), np.array(self.setting_doses),
-                                 sigma=np.array(self.calculation_doses) * (self.sigma / 100))
-        self.p_opt = p_opt
+        p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses), np.array(self.setting_doses),
+                                 sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
+        DosesAndPaths.p_opt = p_opt
 
     def calc_dose_map(self):
         """
@@ -132,9 +130,9 @@ class Dose:
         print("\nPrepearing your file:\n")
 
         for i in np.nditer(imarray):
-            x = np.log10(self.od_blank / i)
+            x = np.log10(DosesAndPaths.od_blank / i)
             x = x - self.zero_dose
-            x = self.fit_func(x, *self.p_opt)
+            x = self.fit_func(x, *DosesAndPaths.p_opt)
             DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
             counter = counter + 1
@@ -148,6 +146,11 @@ class Dose:
 
 
 class DosesAndPaths:
+    empty_field_file = None
+    irrad_film_file = None
+    calculation_doses = []
+    od_blank = None
+    p_opt = None
     doses = list()
     paths = list()
     sigma = int()
@@ -162,11 +165,15 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.setupUi(self)
         self.widget_count = 0
         self.all_widgets = None
+        self.curve_win = None
+
+        self.pushButton_5.setDisabled(True)
 
         self.pushButton.clicked.connect(lambda: self.get_empty_field_file(self.lineEdit))
         self.pushButton_2.clicked.connect(self.dynamic_add_fields)
         self.pushButton_3.clicked.connect(self.dynamic_delete_fields)
         self.pushButton_4.clicked.connect(self.get_all_params_widgets)
+        self.pushButton_5.clicked.connect(self.draw_curve)
 
     def search_file(self):
         """Поиск файла"""
@@ -202,7 +209,6 @@ class Form(QtWidgets.QWidget, Ui_Form):
                 myWidget = self.gridLayout_3.itemAt(index).widget()
                 myWidget.setParent(None)
                 self.adjustSize()
-                print(index)
 
     def get_all_params_widgets(self):
         doses = []
@@ -212,25 +218,84 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.all_widgets = widgets
         for widget in widgets:
             if isinstance(widget, QLineEdit):
-                print("Linedit: %s" % widget.text())
                 paths.append(widget.text())
             if isinstance(widget, QDoubleSpinBox):
                 doses.append(widget.value())
-                print("SpinBox: %s" % widget.value())
 
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
         DosesAndPaths.sigma = sigma
 
+        self.get_enabled_curve_drawing()
+
+    def get_enabled_curve_drawing(self):
+        if len(DosesAndPaths.doses) is not 0 and len(DosesAndPaths.paths) is not 0:
+            self.pushButton_5.setDisabled(False)
+
+    def draw_curve(self):
+        self.curve_win = CurveWindow()
+        self.curve_win.get_curve()
+        self.curve_win.show()
+        self.pushButton_5.setDisabled(True)
+
     def create_widgets_second_open(self):
         data_count = len(DosesAndPaths.doses)
-        print(data_count)
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
                 self.dynamic_add_fields()
 
     def closeEvent(self, event):
         self.openDialog.emit()
+
+
+class CurveWindow(QtWidgets.QWidget, Curve_form):
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setupUi(self)
+
+        self.figure_graph = plt.figure()
+        self.canvas_graph = FigureCanvas(self.figure_graph)
+        self.toolbar_graph = NavigationToolbar(self.canvas_graph, self)
+        self.verticalLayout_5.addWidget(self.toolbar_graph)
+        self.verticalLayout_7.addWidget(self.canvas_graph)
+
+    def get_curve(self):
+        calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+                    DosesAndPaths.irrad_film_file,
+                    DosesAndPaths.sigma)
+        calc.red_chanel_calc()
+        calc.calculate_calibrate_film()
+        GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
+                                    DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph)
+
+
+
+class AxesWindow(QtWidgets.QWidget, Axes_form):
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setupUi(self)
+
+        self.figure_map_x = plt.figure()
+        self.canvas_map_x = FigureCanvas(self.figure_map_x)
+        self.verticalLayout.addWidget(self.canvas_map_x)
+        self.toolbar_x = NavigationToolbar(self.canvas_map_x, self)
+        self.ui.horizontalLayout.addWidget(self.toolbar_x)
+
+        self.figure_map_y = plt.figure()
+        self.canvas_map_y = FigureCanvas(self.figure_map_y)
+        self.verticalLayout_3.addWidget(self.canvas_map_y)
+        self.toolbar_y = NavigationToolbar(self.canvas_map_y, self)
+        self.ui.horizontalLayout_2.addWidget(self.toolbar_y)
+
+    def draw_graphics(self, slice_x, slice_y):
+        ax_x = self.figure_map_x.add_subplot(111)
+        ax_x.plot(slice_x)
+        self.canvas_map_x.draw()
+
+        ax_y = self.figure_map_y.add_subplot(111)
+        ax_y.plot(slice_y)
+        self.canvas_map_y.draw()
 
 
 class CalcUI(QtWidgets.QMainWindow):
@@ -240,12 +305,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.form = None
-
-        # self.figure_graph = plt.figure()
-        # self.canvas_graph = FigureCanvas(self.figure_graph)
-        # self.toolbar_graph = NavigationToolbar(self.canvas_graph, self)
-        # self.ui.verticalLayout.addWidget(self.toolbar_graph)
-        # self.ui.verticalLayout.addWidget(self.canvas_graph)
+        self.graphic_dialog = None
 
         self.scene = QtWidgets.QGraphicsScene()
         self.pixmap = QtWidgets.QGraphicsPixmapItem()
@@ -257,11 +317,6 @@ class CalcUI(QtWidgets.QMainWindow):
         self.toolbar_map = NavigationToolbar(self.canvas_map, self)
         self.ui.verticalLayout_2.addWidget(self.toolbar_map)
         self.ui.verticalLayout_2.addWidget(self.canvas_map)
-
-        # empty field
-        self.empty_field_file = None
-        # irradiate film
-        self.irrad_film_file = None
 
         # self.canvas_map.mpl_connect("motion_notify_event", self.on_press)
         # self.canvas_map.mpl_connect("button_release_event", self.on_release)
@@ -282,33 +337,33 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.lineEdit_3.setText(self.search_file())
 
         if len(self.ui.lineEdit_3.text()) != 0:
-            self.irrad_film_file = self.ui.lineEdit_3.text()
+            DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
             self.ui.lineEdit_3.setDisabled(True)
 
     def get_empty_field_file(self):
         self.ui.lineEdit_2.setText(self.search_file())
 
         if len(self.ui.lineEdit_2.text()) != 0:
-            self.empty_field_file = self.ui.lineEdit_2.text()
+            DosesAndPaths.empty_field_file = self.ui.lineEdit_2.text()
             self.ui.lineEdit_2.setDisabled(True)
 
     def insert_tiff_file(self):
-        img = QtGui.QPixmap(self.irrad_film_file)
+        img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
         self.pixmap.setPixmap(img)
 
     def test(self):
         print('test connect')
 
     def onclick(self, event):
-        self.cursor.onmove(event)
-        # print(event.ydata, event.xdata)
-        x, y = int(event.xdata), int(event.ydata)
-        slice_y = DosesAndPaths.z[:, x]
-        slice_x = DosesAndPaths.z[y, :]
+        if event.inaxes == self.ax and len(DosesAndPaths.z) > 1:
+            self.cursor.onmove(event)
+            x, y = int(event.xdata), int(event.ydata)
+            slice_y = DosesAndPaths.z[:, x]
+            slice_x = DosesAndPaths.z[y, :]
 
-        ax2 = self.figure_map.add_subplot(222, sharex=self.ax)
-        ax2.plot(slice_x)
-        self.canvas_map.draw()
+            self.graphic_dialog = AxesWindow()
+            self.graphic_dialog.draw_graphics(slice_x, slice_y)
+            self.graphic_dialog.show()
 
     # def onclick(self, event):
     #     self.figure_map.clf()
@@ -369,11 +424,9 @@ class CalcUI(QtWidgets.QMainWindow):
         return file_name
 
     def start_calc(self):
-        calc = Dose(self.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses, self.irrad_film_file,
+        calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+                    DosesAndPaths.irrad_film_file,
                     DosesAndPaths.sigma)
-        calc.red_chanel_calc()
-        calc.calculate_calibrate_film()
-        # calc.draw_curve()
         calc.calc_dose_map()
         self.insert_tiff_file()
 
