@@ -36,6 +36,7 @@ class GraphicsPlotting:
 
     @staticmethod
     def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph):
+        figure_graph.clf()
         ax = figure_graph.add_subplot(111)
         # ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
         # ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *self.p_opt))
@@ -110,10 +111,17 @@ class Dose:
         # затем считаем для каждого файла с использованием посчитанной нулевой
         for i in self.calibrate_list:
             self.find_best_fit(i)
+        try:
+            print(self.sigma)
+            print(self.setting_doses)
+            print(DosesAndPaths.calculation_doses)
 
-        p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses), np.array(self.setting_doses),
+            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses), np.array(self.setting_doses),
                                  sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
-        DosesAndPaths.p_opt = p_opt
+            DosesAndPaths.p_opt = p_opt
+        except (ValueError, RuntimeError):
+
+            print('Incorrect sigma value')
 
     def calc_dose_map(self):
         """
@@ -148,7 +156,7 @@ class Dose:
 class DosesAndPaths:
     empty_field_file = None
     irrad_film_file = None
-    calculation_doses = []
+    calculation_doses = list()
     od_blank = None
     p_opt = None
     doses = list()
@@ -225,6 +233,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
         DosesAndPaths.sigma = sigma
+        DosesAndPaths.calculation_doses.clear()
 
         self.get_enabled_curve_drawing()
 
@@ -260,14 +269,16 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         self.verticalLayout_7.addWidget(self.canvas_graph)
 
     def get_curve(self):
-        calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
-                    DosesAndPaths.irrad_film_file,
-                    DosesAndPaths.sigma)
-        calc.red_chanel_calc()
-        calc.calculate_calibrate_film()
-        GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
-                                    DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph)
-
+        try:
+            calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+                        DosesAndPaths.irrad_film_file,
+                        DosesAndPaths.sigma)
+            calc.red_chanel_calc()
+            calc.calculate_calibrate_film()
+            GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
+                                        DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph)
+        except (ValueError, TypeError):
+            print('Incorrect parameters')
 
 
 class AxesWindow(QtWidgets.QWidget, Axes_form):
@@ -280,13 +291,13 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.canvas_map_x = FigureCanvas(self.figure_map_x)
         self.verticalLayout.addWidget(self.canvas_map_x)
         self.toolbar_x = NavigationToolbar(self.canvas_map_x, self)
-        self.ui.horizontalLayout.addWidget(self.toolbar_x)
+        self.verticalLayout_4.addWidget(self.toolbar_x)
 
         self.figure_map_y = plt.figure()
         self.canvas_map_y = FigureCanvas(self.figure_map_y)
         self.verticalLayout_3.addWidget(self.canvas_map_y)
         self.toolbar_y = NavigationToolbar(self.canvas_map_y, self)
-        self.ui.horizontalLayout_2.addWidget(self.toolbar_y)
+        self.verticalLayout_5.addWidget(self.toolbar_y)
 
     def draw_graphics(self, slice_x, slice_y):
         ax_x = self.figure_map_x.add_subplot(111)
@@ -427,6 +438,8 @@ class CalcUI(QtWidgets.QMainWindow):
         calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
                     DosesAndPaths.irrad_film_file,
                     DosesAndPaths.sigma)
+        calc.red_chanel_calc()
+        calc.calculate_calibrate_film()
         calc.calc_dose_map()
         self.insert_tiff_file()
 
