@@ -131,7 +131,7 @@ class Dose:
         imarray = (imarray[:, :, 0])
 
         print("\nShape of scanned film:", np.shape(imarray))
-
+        progress = 0
         counter = 0
         print("\nPrepearing your file:\n")
 
@@ -144,10 +144,13 @@ class Dose:
             counter = counter + 1
             if counter % 10000 == 0:
                 print("Iteration ", counter, "/", np.size(imarray))
+                progress += 1
+                print(progress)
+                application.ui.progressBar.setValue(progress)
 
         DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
         print("\nDose calculation ended!!!\n")
-
+        application.ui.progressBar.setValue(100)
         GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
 
 
@@ -394,6 +397,7 @@ class CalcUI(QtWidgets.QMainWindow):
                         DosesAndPaths.sigma)
             calc.red_chanel_calc()
             calc.calculate_calibrate_film()
+            # Todo: выделить в отдельный поток calc_dose_map
             calc.calc_dose_map()
             self.insert_tiff_file()
 
