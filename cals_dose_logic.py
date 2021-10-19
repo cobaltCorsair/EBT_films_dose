@@ -29,7 +29,11 @@ from Curve import Ui_Form as Curve_form
 class GraphicsPlotting:
     @staticmethod
     def draw_dose_map(z):
+        application.figure_map.clf()
         ax = application.figure_map.add_subplot(111)
+        application.cursor = matplotlib.widgets.Cursor(ax, useblit=False, color='red', linewidth=1)
+        application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
+        application.canvas_map.draw()
         im3 = ax.imshow(z, cmap="jet", vmin=0, vmax=2., interpolation="gaussian")
         application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
         application.canvas_map.draw()
@@ -101,9 +105,7 @@ class Dose:
 
     def find_best_fit(self, path_to_film):
         od_current_dose = self.calc_dose(path_to_film) - self.zero_dose
-        # print(od_current_dose)
         DosesAndPaths.calculation_doses.append(od_current_dose)
-        # return od_current_dose
 
     def calculate_calibrate_film(self):
         # сначала считаем нулевую дозу
@@ -112,10 +114,6 @@ class Dose:
         for i in self.calibrate_list:
             self.find_best_fit(i)
         try:
-            print(self.sigma)
-            print(self.setting_doses)
-            print(DosesAndPaths.calculation_doses)
-
             p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses), np.array(self.setting_doses),
                                  sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
             DosesAndPaths.p_opt = p_opt
@@ -162,11 +160,10 @@ class DosesAndPaths:
     doses = list()
     paths = list()
     sigma = int()
-    z = []
+    z = list()
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
-    openDialog = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -204,7 +201,6 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.gridLayout_3.addWidget(qline_edit)
         self.gridLayout_3.addWidget(push_button)
 
-        # push_button.clicked.connect(self.search_file)
         push_button.clicked.connect(lambda: self.get_empty_field_file(qline_edit))
 
         self.widget_count += 1
@@ -252,9 +248,6 @@ class Form(QtWidgets.QWidget, Ui_Form):
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
                 self.dynamic_add_fields()
-
-    def closeEvent(self, event):
-        self.openDialog.emit()
 
 
 class CurveWindow(QtWidgets.QWidget, Curve_form):
@@ -329,15 +322,9 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.verticalLayout_2.addWidget(self.toolbar_map)
         self.ui.verticalLayout_2.addWidget(self.canvas_map)
 
-        # self.canvas_map.mpl_connect("motion_notify_event", self.on_press)
-        # self.canvas_map.mpl_connect("button_release_event", self.on_release)
-        # self.canvas_map.mpl_connect("motion_notify_event", self.on_move)
-        # self.canvas_map.mpl_connect("button_press_event", self.onclick)
         self.ax = self.figure_map.add_subplot(111)
         # Set cursor
-        self.cursor = matplotlib.widgets.Cursor(self.ax, useblit=False, color='red', linewidth=1)
-        self.canvas_map.mpl_connect('button_press_event', self.onclick)
-        self.canvas_map.draw()
+        self.cursor = None
 
         self.ui.pushButton_5.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_7.clicked.connect(self.get_irrad_film_file)
@@ -362,11 +349,8 @@ class CalcUI(QtWidgets.QMainWindow):
         img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
         self.pixmap.setPixmap(img)
 
-    def test(self):
-        print('test connect')
-
-    def onclick(self, event):
-        if event.inaxes == self.ax and len(DosesAndPaths.z) > 1:
+    def onclick(self, event, ax):
+        if event.inaxes == ax and len(DosesAndPaths.z) > 1:
             self.cursor.onmove(event)
             x, y = int(event.xdata), int(event.ydata)
             slice_y = DosesAndPaths.z[:, x]
@@ -376,43 +360,10 @@ class CalcUI(QtWidgets.QMainWindow):
             self.graphic_dialog.draw_graphics(slice_x, slice_y)
             self.graphic_dialog.show()
 
-    # def onclick(self, event):
-    #     self.figure_map.clf()
-    #     GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
-    #     ax = self.figure_map.add_subplot(111)
-    #     im1 = ax.axhline(y=event.ydata, c='black', linestyle="-.")
-    #     im2 = ax.axvline(x=event.xdata, c='black', linestyle="-.")
-    #     self.canvas_map.draw()
-
-    def on_press(self, event):
-        print("press")
-        print("event.xdata", event.xdata)
-        print("event.ydata", event.ydata)
-        print("event.inaxes", event.inaxes)
-        print("x", event.x)
-        print("y", event.y)
-
-    def on_release(self, event):
-        print("release:")
-        print("event.xdata", event.xdata)
-        print("event.ydata", event.ydata)
-        print("event.inaxes", event.inaxes)
-        print("x", event.x)
-        print("y", event.y)
-
-    def on_move(self, event):
-        print("move")
-        print("event.xdata", event.xdata)
-        print("event.ydata", event.ydata)
-        print("event.inaxes", event.inaxes)
-        print("x", event.x)
-        print("y", event.y)
-
     def get_dialog_window(self):
         self.form = Form()
         self.form.create_widgets_second_open()
         self.insert_data_in_fields()
-        # self.form.openDialog.connect(self.test)
         self.form.show()
 
     def insert_data_in_fields(self):
@@ -435,13 +386,16 @@ class CalcUI(QtWidgets.QMainWindow):
         return file_name
 
     def start_calc(self):
-        calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
-                    DosesAndPaths.irrad_film_file,
-                    DosesAndPaths.sigma)
-        calc.red_chanel_calc()
-        calc.calculate_calibrate_film()
-        calc.calc_dose_map()
-        self.insert_tiff_file()
+        if DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_file is not None \
+                and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
+            DosesAndPaths.z = list()
+            calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+                        DosesAndPaths.irrad_film_file,
+                        DosesAndPaths.sigma)
+            calc.red_chanel_calc()
+            calc.calculate_calibrate_film()
+            calc.calc_dose_map()
+            self.insert_tiff_file()
 
 
 app = QtWidgets.QApplication([])
