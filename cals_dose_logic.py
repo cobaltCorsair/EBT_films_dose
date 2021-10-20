@@ -9,7 +9,7 @@ import numpy as np
 import os
 import tifffile as tifimage
 import xdata as xdata
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QThread
 from PyQt5.QtGui import QPixmap
 from numpy import ndarray
 from scipy.optimize import curve_fit
@@ -42,8 +42,6 @@ class GraphicsPlotting:
     def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph):
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        # ax.plot(self.calculation_doses, self.setting_doses, ".k", markersize=6, label="Измерения")
-        # ax.plot(self.calculation_doses, self.fit_func(self.setting_doses, *self.p_opt))
         ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Измерения")
         ax.plot(calculation_doses, func(setting_doses, *p_opt))
         ax.grid(True, linestyle="-.")
@@ -52,17 +50,24 @@ class GraphicsPlotting:
         canvas_graph.draw()
 
 
-class Dose:
+class Dose(QThread):
     """
     Calculate dose
     """
+    progressChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, zero_dose, calibrate_list, doses_list, irradiation_film, sigma):
+        super().__init__()
         self.zero_dose = zero_dose
         self.calibrate_list = calibrate_list
         self.irradiation_film = irradiation_film
         self.setting_doses = doses_list
         self.sigma = sigma
+
+    def run(self):
+        self.red_chanel_calc()
+        self.calculate_calibrate_film()
+        self.calc_dose_map()
 
     @staticmethod
     def fit_func(od, a, b, c):
@@ -145,12 +150,12 @@ class Dose:
             if counter % 10000 == 0:
                 print("Iteration ", counter, "/", np.size(imarray))
                 progress += 1
-                print(progress)
-                application.ui.progressBar.setValue(progress)
+                # print(progress)
+                self.progressChanged.emit(round(progress))
 
         DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
         print("\nDose calculation ended!!!\n")
-        application.ui.progressBar.setValue(100)
+        self.progressChanged.emit(100)
         GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
 
 
@@ -254,6 +259,8 @@ class Form(QtWidgets.QWidget, Ui_Form):
 
 
 class CurveWindow(QtWidgets.QWidget, Curve_form):
+    closeDialog = pyqtSignal()
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
@@ -276,8 +283,13 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
+    def closeEvent(self, event):
+        plt.close(self.figure_graph)
+        self.closeDialog.emit()
+
 
 class AxesWindow(QtWidgets.QWidget, Axes_form):
+    closeDialog = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -296,13 +308,20 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.verticalLayout_5.addWidget(self.toolbar_y)
 
     def draw_graphics(self, slice_x, slice_y):
+        self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.plot(slice_x)
         self.canvas_map_x.draw()
 
+        self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.plot(slice_y)
         self.canvas_map_y.draw()
+
+    def closeEvent(self, event):
+        plt.close(self.figure_map_x)
+        plt.close(self.figure_map_y)
+        self.closeDialog.emit()
 
 
 class CalcUI(QtWidgets.QMainWindow):
@@ -313,6 +332,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.form = None
         self.graphic_dialog = None
+        self.thread = None
 
         self.scene = QtWidgets.QGraphicsScene()
         self.pixmap = QtWidgets.QGraphicsPixmapItem()
@@ -354,14 +374,17 @@ class CalcUI(QtWidgets.QMainWindow):
 
     def onclick(self, event, ax):
         if event.inaxes == ax and len(DosesAndPaths.z) > 1:
-            self.cursor.onmove(event)
-            x, y = int(event.xdata), int(event.ydata)
-            slice_y = DosesAndPaths.z[:, x]
-            slice_x = DosesAndPaths.z[y, :]
+            try:
+                self.cursor.onmove(event)
+                x, y = int(event.xdata), int(event.ydata)
+                slice_y = DosesAndPaths.z[:, x]
+                slice_x = DosesAndPaths.z[y, :]
 
-            self.graphic_dialog = AxesWindow()
-            self.graphic_dialog.draw_graphics(slice_x, slice_y)
-            self.graphic_dialog.show()
+                self.graphic_dialog = AxesWindow()
+                self.graphic_dialog.draw_graphics(slice_x, slice_y)
+                self.graphic_dialog.show()
+            except IndexError:
+                print('Too many indices for array')
 
     def get_dialog_window(self):
         self.form = Form()
@@ -388,17 +411,18 @@ class CalcUI(QtWidgets.QMainWindow):
             QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
+    def progress_bar_update(self, data):
+        self.ui.progressBar.setValue(data)
+
     def start_calc(self):
         if DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_file is not None \
                 and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
             DosesAndPaths.z = list()
-            calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+            self.thread = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
                         DosesAndPaths.irrad_film_file,
                         DosesAndPaths.sigma)
-            calc.red_chanel_calc()
-            calc.calculate_calibrate_film()
-            # Todo: выделить в отдельный поток calc_dose_map
-            calc.calc_dose_map()
+            self.thread.start()
+            self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
 
 
