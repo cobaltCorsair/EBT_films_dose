@@ -184,7 +184,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
     def search_file(self):
         """Поиск файла"""
         file_name = \
-            QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
+            QFileDialog.getOpenFileName(self, 'Open file', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def get_empty_field_file(self, line):
