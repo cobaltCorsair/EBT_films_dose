@@ -1,25 +1,17 @@
 # Python 3.7
 # -*- coding: utf-8 -*-
-import random
 import sys
-
-import numpy as np
+import json
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 import tifffile as tifimage
-import xdata as xdata
+import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
-from PyQt5.QtGui import QPixmap
-from numpy import ndarray
 from scipy.optimize import curve_fit
-
 from PyQt5 import QtWidgets, QtCore, QtGui
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QLineEdit, QCheckBox, QDoubleSpinBox, QSizePolicy, QLabel
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-import matplotlib.widgets
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
@@ -119,8 +111,9 @@ class Dose(QThread):
         for i in self.calibrate_list:
             self.find_best_fit(i)
         try:
-            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses), np.array(self.setting_doses),
-                                 sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
+            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses),
+                                     np.array(self.setting_doses),
+                                     sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
             DosesAndPaths.p_opt = p_opt
         except (ValueError, RuntimeError):
 
@@ -167,7 +160,7 @@ class DosesAndPaths:
     p_opt = None
     doses = list()
     paths = list()
-    sigma = int()
+    sigma = 0
     z = list()
 
 
@@ -353,6 +346,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_7.clicked.connect(self.get_irrad_film_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
+        self.ui.pushButton_2.clicked.connect(SaveLoadData.create_json)
 
     def get_irrad_film_file(self):
         self.ui.lineEdit_3.setText(self.search_file())
@@ -419,11 +413,36 @@ class CalcUI(QtWidgets.QMainWindow):
                 and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
-                        DosesAndPaths.irrad_film_file,
-                        DosesAndPaths.sigma)
+                               DosesAndPaths.irrad_film_file,
+                               DosesAndPaths.sigma)
             self.thread.start()
             self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
+
+
+class SaveLoadData:
+    @staticmethod
+    def create_json():
+        data = {'calibrate_list': []}
+        if len(DosesAndPaths.doses) > 0 and len(DosesAndPaths.paths) > 0:
+            dose_path_data = dict(zip(DosesAndPaths.doses, DosesAndPaths.paths))
+            data['calibrate_list'].append(dose_path_data)
+        if DosesAndPaths.sigma is not 0:
+            data['sigma'] = DosesAndPaths.sigma
+        if DosesAndPaths.empty_field_file is not None:
+            data['empty_field_file'] = DosesAndPaths.empty_field_file
+
+        SaveLoadData.save_json(data)
+
+    @staticmethod
+    def save_json(data):
+        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty field file',
+                                                  'calibrate_and_empty',
+                                                  'JSON files (*.json);;all files(*.*)',
+                                                  options=QFileDialog.DontUseNativeDialog)
+        if filename is not '':
+            with open(filename, 'w') as outfile:
+                json.dump(data, outfile, ensure_ascii=False)
 
 
 app = QtWidgets.QApplication([])
