@@ -1,5 +1,6 @@
 # Python 3.7
 # -*- coding: utf-8 -*-
+import os
 import sys
 import json
 import matplotlib.pyplot as plt
@@ -348,16 +349,17 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_2.clicked.connect(SaveLoadData.create_json)
+        self.ui.pushButton_3.clicked.connect(SaveLoadData.load_json)
 
     def get_irrad_film_file(self):
-        self.ui.lineEdit_3.setText(self.search_file())
+        self.ui.lineEdit_3.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_3.text()) != 0:
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
             self.ui.lineEdit_3.setDisabled(True)
 
     def get_empty_field_file(self):
-        self.ui.lineEdit_2.setText(self.search_file())
+        self.ui.lineEdit_2.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_2.text()) != 0:
             DosesAndPaths.empty_field_file = self.ui.lineEdit_2.text()
@@ -400,10 +402,10 @@ class CalcUI(QtWidgets.QMainWindow):
 
         self.form.spinBox.setValue(DosesAndPaths.sigma)
 
-    def search_file(self):
+    def search_file(self, file_type):
         """Поиск файла"""
         file_name = \
-            QFileDialog.getOpenFileName(self, 'Открыть файл', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
+            QFileDialog.getOpenFileName(self, 'Open file', '', file_type, None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def progress_bar_update(self, data):
@@ -438,12 +440,29 @@ class SaveLoadData:
     @staticmethod
     def save_json(data):
         filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty field file',
-                                                  'calibrate_and_empty',
+                                                  'calibrate_and_empty.json',
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
             with open(filename, 'w') as outfile:
-                json.dump(data, outfile, ensure_ascii=False)
+                json.dump(data, outfile, ensure_ascii=False, indent=4)
+
+    @staticmethod
+    def load_json():
+        data = application.search_file('*.json')
+
+        if os.path.exists(data):
+            with open(data) as f:
+                data = json.load(f)
+                for p in data['calibrate_list']:
+                    DosesAndPaths.doses = [float(i) for i in p.keys()]
+                    DosesAndPaths.paths = p.values()
+
+                DosesAndPaths.sigma = data['sigma']
+                DosesAndPaths.empty_field_file = data['empty_field_file']
+
+                application.ui.lineEdit_2.setText(DosesAndPaths.empty_field_file)
+
 
 
 app = QtWidgets.QApplication([])
