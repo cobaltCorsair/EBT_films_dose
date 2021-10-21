@@ -61,10 +61,11 @@ calibrList = calibrList[1:15, :]
 
 # при подборе параметров кривой юзеру должно быть предложено указать относительную погрешность (sigma)
 
-popt, pcov = curve_fit(fit_func, calibrList[:, 0], calibrList[:, 1], sigma=calibrList[:, 0] * 0.05)
-
+popt, pcov = curve_fit(fit_func, calibrList[:, 0], calibrList[:, 1], sigma=calibrList[:, 1] * 0.05)
+#print(calibrList[:, 0], calibrList[:, 1])
 fig, ax = plt.subplots(figsize=(9, 5))
 ax.plot(calibrList[:, 0], calibrList[:, 1], ".k", markersize=6, label="Измерения")
+print(popt)
 ax.plot(calibrList[:, 0], fit_func(calibrList[:, 0], *popt))
 # ax.set_xlim(5000,44000)
 # ax.set_ylim(-1,np.amax(calibrList[;,1])+1)

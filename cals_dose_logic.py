@@ -43,11 +43,11 @@ class GraphicsPlotting:
         """
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Измерения")
-        ax.plot(calculation_doses, func(setting_doses, *p_opt))
+        ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Measurements")
+        ax.plot(calculation_doses, func(calculation_doses, *p_opt))
         ax.grid(True, linestyle="-.")
-        ax.set_ylabel('Поглощенная доза, Гр')
-        ax.set_xlabel('относительная оптическая плотность')
+        ax.set_ylabel('Absorbed dose, Gy')
+        ax.set_xlabel('Relative optical density')
         canvas_graph.draw()
 
 
@@ -126,9 +126,9 @@ class Dose(QThread):
         for i in self.calibrate_list:
             self.find_best_fit(i)
         try:
-            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses),
-                                     np.array(self.setting_doses),
-                                     sigma=np.array(DosesAndPaths.calculation_doses) * (self.sigma / 100))
+            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses[1:]),
+                                     np.array(self.setting_doses[1:]),
+                                     sigma=np.array(self.setting_doses[1:]) * (self.sigma / 100))
             DosesAndPaths.p_opt = p_opt
         except (ValueError, RuntimeError):
 
