@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import matplotlib.pyplot as plt
+
 plt.switch_backend('agg')
 import numpy as np
 import tifffile as tifimage
@@ -23,6 +24,9 @@ from Curve import Ui_Form as Curve_form
 class GraphicsPlotting:
     @staticmethod
     def draw_dose_map(z):
+        """
+        This method draws a map of dose distribution
+        """
         application.figure_map.clf()
         ax = application.figure_map.add_subplot(111)
         application.cursor = matplotlib.widgets.Cursor(ax, useblit=False, color='red', linewidth=1)
@@ -34,6 +38,9 @@ class GraphicsPlotting:
 
     @staticmethod
     def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph):
+        """
+        This method draws dose curve
+        """
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
         ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Измерения")
@@ -59,6 +66,9 @@ class Dose(QThread):
         self.sigma = sigma
 
     def run(self):
+        """
+        Start thread
+        """
         self.red_chanel_calc()
         self.calculate_calibrate_film()
         self.calc_dose_map()
@@ -77,7 +87,7 @@ class Dose(QThread):
 
     def red_chanel_calc(self):
         """
-        Calculate value in red chanel of blank field
+        Calculate value in red channel of blank field
         :return:
         """
         blankFieldPath = self.zero_dose
@@ -92,7 +102,7 @@ class Dose(QThread):
 
     def calc_dose(self, path_to_film):
         """
-        Обработчик файлов снимков
+        Image file processor
         """
         im = tifimage.imread(path_to_film)
         imarray = np.array(im, dtype=np.uint16)
@@ -107,6 +117,9 @@ class Dose(QThread):
         DosesAndPaths.calculation_doses.append(od_current_dose)
 
     def calculate_calibrate_film(self):
+        """
+        Calculating dose for each file
+        """
         # сначала считаем нулевую дозу
         self.zero_dose = self.calc_dose(self.zero_dose)
         # затем считаем для каждого файла с использованием посчитанной нулевой
@@ -145,7 +158,6 @@ class Dose(QThread):
             if counter % 10000 == 0:
                 print("Iteration ", counter, "/", np.size(imarray))
                 progress += 1
-                # print(progress)
                 self.progressChanged.emit(round(progress))
 
         DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
@@ -155,6 +167,9 @@ class Dose(QThread):
 
 
 class DosesAndPaths:
+    """
+    Data-class
+    """
     empty_field_file = None
     irrad_film_file = None
     calculation_doses = list()
@@ -167,6 +182,7 @@ class DosesAndPaths:
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
+    """UI class for displaying dose/path list"""
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -184,18 +200,24 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_5.clicked.connect(self.draw_curve)
 
     def search_file(self):
-        """Поиск файла"""
+        """
+        Search file
+        """
         file_name = \
             QFileDialog.getOpenFileName(self, 'Open file', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def get_empty_field_file(self, line):
+        """Set the found file in lineEdit"""
         line.setText(self.search_file())
 
         if len(line.text()) != 0:
             line.setDisabled(True)
 
     def dynamic_add_fields(self):
+        """
+        Dynamically adding fields to record new paths/doses
+        """
         spin_box = QtWidgets.QDoubleSpinBox()
         qline_edit = QtWidgets.QLineEdit()
         push_button = QtWidgets.QPushButton("Select")
@@ -209,6 +231,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.widget_count += 1
 
     def dynamic_delete_fields(self):
+        """
+        Deleting fields to record paths/doses
+        """
         index = self.gridLayout_3.count()
         if index != 5:
             for i in range(3):
@@ -218,6 +243,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
                 self.adjustSize()
 
     def get_all_params_widgets(self):
+        """
+        Set values from fields to variables
+        """
         doses = []
         paths = []
         sigma = self.spinBox.value()
@@ -237,10 +265,16 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.get_enabled_curve_drawing()
 
     def get_enabled_curve_drawing(self):
+        """
+        Blocking the availability of fields for editing
+        """
         if len(DosesAndPaths.doses) is not 0 and len(DosesAndPaths.paths) is not 0:
             self.pushButton_5.setDisabled(False)
 
     def draw_curve(self):
+        """
+        The method connects methods of drawing graphs
+        """
         self.curve_win = CurveWindow()
         self.curve_win.get_curve()
         self.curve_win.show()
@@ -254,6 +288,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
 
 
 class CurveWindow(QtWidgets.QWidget, Curve_form):
+    """
+    Class of the dialog window with a curve
+    """
     closeDialog = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -267,6 +304,9 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         self.verticalLayout_7.addWidget(self.canvas_graph)
 
     def get_curve(self):
+        """
+        Draw dose curve
+        """
         try:
             calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
                         DosesAndPaths.irrad_film_file,
@@ -279,11 +319,18 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
             print('Incorrect parameters')
 
     def closeEvent(self, event):
+        """
+        Clear figure
+        :param event: Window close
+        """
         plt.close(self.figure_graph)
         self.closeDialog.emit()
 
 
 class AxesWindow(QtWidgets.QWidget, Axes_form):
+    """
+    Class for drawing graphs on the X and Y axes
+    """
     closeDialog = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
@@ -303,6 +350,11 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.verticalLayout_5.addWidget(self.toolbar_y)
 
     def draw_graphics(self, slice_x, slice_y):
+        """
+        Method for graphing the X and Y axes
+        :param slice_x: Set of values along the X-axis
+        :param slice_y: Set of values along the Y-axis
+        """
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.plot(slice_x)
@@ -314,12 +366,20 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.canvas_map_y.draw()
 
     def closeEvent(self, event):
+        """
+        Clear figure
+        :param event: Window close
+        """
         plt.close(self.figure_map_x)
         plt.close(self.figure_map_y)
         self.closeDialog.emit()
 
 
 class CalcUI(QtWidgets.QMainWindow):
+    """
+    Main interface
+    """
+
     def __init__(self, *args, **kwargs):
         super(CalcUI, self).__init__(*args, **kwargs)
 
@@ -352,6 +412,9 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_3.clicked.connect(SaveLoadData.load_json)
 
     def get_irrad_film_file(self):
+        """
+        Find and paste the irradiate film file in tiff format
+        """
         self.ui.lineEdit_3.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_3.text()) != 0:
@@ -359,6 +422,9 @@ class CalcUI(QtWidgets.QMainWindow):
             self.ui.lineEdit_3.setDisabled(True)
 
     def get_empty_field_file(self):
+        """
+        Find and paste the empty file in tiff format
+        """
         self.ui.lineEdit_2.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_2.text()) != 0:
@@ -366,10 +432,18 @@ class CalcUI(QtWidgets.QMainWindow):
             self.ui.lineEdit_2.setDisabled(True)
 
     def insert_tiff_file(self):
+        """
+        Insert a picture of the film in the interface window
+        """
         img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
         self.pixmap.setPixmap(img)
 
     def onclick(self, event, ax):
+        """
+        Place the cross cursor on the dose map
+        :param event: onclick event
+        ::param ax: existing dose map
+        """
         if event.inaxes == ax and len(DosesAndPaths.z) > 1:
             try:
                 self.cursor.onmove(event)
@@ -384,12 +458,18 @@ class CalcUI(QtWidgets.QMainWindow):
                 print('Too many indices for array')
 
     def get_dialog_window(self):
+        """
+        Show dialog window with doses and paths
+        """
         self.form = Form()
         self.form.create_widgets_second_open()
         self.insert_data_in_fields()
         self.form.show()
 
     def insert_data_in_fields(self):
+        """
+        Fill in the dialog window with doses and paths when opening
+        """
         widgets = [self.form.gridLayout_3.itemAt(i).widget() for i in range(self.form.gridLayout_3.count())]
         lineedits = [i for i in widgets if isinstance(i, QLineEdit)]
         spinboxes = [i for i in widgets if isinstance(i, QDoubleSpinBox)]
@@ -403,15 +483,24 @@ class CalcUI(QtWidgets.QMainWindow):
         self.form.spinBox.setValue(DosesAndPaths.sigma)
 
     def search_file(self, file_type):
-        """Поиск файла"""
+        """
+        Search file any type
+        :param file_type: type of file
+        """
         file_name = \
             QFileDialog.getOpenFileName(self, 'Open file', '', file_type, None, QFileDialog.DontUseNativeDialog)[0]
         return file_name
 
     def progress_bar_update(self, data):
+        """
+        Updating progress bar
+        """
         self.ui.progressBar.setValue(data)
 
     def start_calc(self):
+        """
+        Running the calculation in the thread
+        """
         if DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_file is not None \
                 and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
             DosesAndPaths.z = list()
@@ -424,8 +513,15 @@ class CalcUI(QtWidgets.QMainWindow):
 
 
 class SaveLoadData:
+    """
+    Сlass for save and load json
+    """
+
     @staticmethod
     def create_json():
+        """
+        Create json object
+        """
         data = {'calibrate_list': []}
         if len(DosesAndPaths.doses) > 0 and len(DosesAndPaths.paths) > 0:
             dose_path_data = dict(zip(DosesAndPaths.doses, DosesAndPaths.paths))
@@ -439,6 +535,10 @@ class SaveLoadData:
 
     @staticmethod
     def save_json(data):
+        """
+        Save json file
+        :param data: json object
+        """
         filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty field file',
                                                   'calibrate_and_empty.json',
                                                   'JSON files (*.json);;all files(*.*)',
@@ -449,6 +549,9 @@ class SaveLoadData:
 
     @staticmethod
     def load_json():
+        """
+        Load and parse json file
+        """
         data = application.search_file('*.json')
 
         if os.path.exists(data):
@@ -464,19 +567,17 @@ class SaveLoadData:
                 application.ui.lineEdit_2.setText(DosesAndPaths.empty_field_file)
 
 
-
 app = QtWidgets.QApplication([])
-# иконка приложения
+# icon
 # ico = QtGui.QIcon('./src/icon.png')
 # app.setWindowIcon(ico)
-# стиль отображения интерфейса
+# style GUI
 app.setStyle("Fusion")
 app.processEvents()
 application = CalcUI()
-
-# указываем заголовок окна
-application.setWindowTitle("Dose")
-# задаем минимальный размер окна, до которого его можно ужимать
+# win title
+application.setWindowTitle("Dose calculator")
+# set minimum size
 # application.setMaximumSize(800, 600)
 application.show()
 sys.exit(app.exec())
