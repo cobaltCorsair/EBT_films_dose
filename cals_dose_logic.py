@@ -444,7 +444,8 @@ class CalcUI(QtWidgets.QMainWindow):
         :param event: onclick event
         ::param ax: existing dose map
         """
-        if event.inaxes == ax and len(DosesAndPaths.z) > 1:
+        state = self.toolbar_map.mode
+        if event.inaxes == ax and len(DosesAndPaths.z) > 1 and len(state) == 0:
             try:
                 self.cursor.onmove(event)
                 x, y = int(event.xdata), int(event.ydata)
