@@ -32,7 +32,7 @@ class GraphicsPlotting:
         application.cursor = matplotlib.widgets.Cursor(ax, useblit=False, color='red', linewidth=1)
         application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
         application.canvas_map.draw()
-        im3 = ax.imshow(z, cmap="jet", vmin=0, vmax=2., interpolation="gaussian")
+        im3 = ax.imshow(z, cmap="jet", vmin=0)
         application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
         application.canvas_map.draw()
 
@@ -97,7 +97,7 @@ class Dose(QThread):
         odBlank = np.mean(imarray)
         print("Blank field value: ", round(odBlank, 2))
 
-        DosesAndPaths.od_blank = odBlank
+        DosesAndPaths.redChannelBlank = odBlank
         return odBlank
 
     def calc_dose(self, path_to_film):
@@ -107,8 +107,8 @@ class Dose(QThread):
         im = tifimage.imread(path_to_film)
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
-        od_current_dose = np.mean(imarray)
-        od_current_dose = np.log10(DosesAndPaths.od_blank / od_current_dose)
+        redChannelCurrentTiff = np.mean(imarray)
+        od_current_dose = np.log10(DosesAndPaths.redChannelBlank / redChannelCurrentTiff)
 
         return od_current_dose
 
@@ -121,7 +121,7 @@ class Dose(QThread):
         Calculating dose for each file
         """
         # сначала считаем нулевую дозу
-        self.zero_dose = self.calc_dose(self.zero_dose)
+        self.zero_dose = self.calc_dose(self.calibrate_list[0])
         # затем считаем для каждого файла с использованием посчитанной нулевой
         for i in self.calibrate_list:
             self.find_best_fit(i)
@@ -149,7 +149,7 @@ class Dose(QThread):
         print("\nPrepearing your file:\n")
 
         for i in np.nditer(imarray):
-            x = np.log10(DosesAndPaths.od_blank / i)
+            x = np.log10(DosesAndPaths.redChannelBlank / i)
             x = x - self.zero_dose
             x = self.fit_func(x, *DosesAndPaths.p_opt)
             DosesAndPaths.z = np.append(DosesAndPaths.z, x)
@@ -173,7 +173,7 @@ class DosesAndPaths:
     empty_field_file = None
     irrad_film_file = None
     calculation_doses = list()
-    od_blank = None
+    redChannelBlank = None
     p_opt = None
     doses = list()
     paths = list()
@@ -357,11 +357,13 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
+        ax_x.grid(True, linestyle = "-.")
         ax_x.plot(slice_x)
         self.canvas_map_x.draw()
 
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
+        ax_y.grid(True, linestyle = "-.")
         ax_y.plot(slice_y)
         self.canvas_map_y.draw()
 
@@ -444,8 +446,7 @@ class CalcUI(QtWidgets.QMainWindow):
         :param event: onclick event
         ::param ax: existing dose map
         """
-        state = self.toolbar_map.mode
-        if event.inaxes == ax and len(DosesAndPaths.z) > 1 and len(state) == 0:
+        if event.inaxes == ax and len(DosesAndPaths.z) > 1:
             try:
                 self.cursor.onmove(event)
                 x, y = int(event.xdata), int(event.ydata)
