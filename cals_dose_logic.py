@@ -121,8 +121,6 @@ class Dose(QThread):
         Calculating dose for each file
         """
         # сначала считаем нулевую дозу
-        print(self.calibrate_list)
-        print(self.zero_dose)
         self.zero_dose = self.calc_dose(list(self.calibrate_list)[0])
         # затем считаем для каждого файла с использованием посчитанной нулевой
         for i in self.calibrate_list:
