@@ -396,11 +396,6 @@ class CalcUI(QtWidgets.QMainWindow):
         self.graphic_dialog = None
         self.thread = None
 
-        # self.scene = QtWidgets.QGraphicsScene()
-        # self.pixmap = QtWidgets.QGraphicsPixmapItem()
-        # self.scene.addItem(self.pixmap)
-        # self.ui.graphicsView.setScene(self.scene)
-
         self.image_map = plt.figure()
         self.image_canvas = FigureCanvas(self.image_map)
         self.image_toolbar = NavigationToolbar(self.image_canvas, self)
@@ -459,9 +454,6 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Insert a picture of the film in the interface window
         """
-        # img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
-        # self.pixmap.setPixmap(img)
-
         self.image_map.clf()
         img = plt.imread(DosesAndPaths.irrad_film_file)
         ax = self.image_map.add_subplot(111)
