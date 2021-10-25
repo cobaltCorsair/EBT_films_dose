@@ -69,7 +69,7 @@ class Dose(QThread):
         """
         Start thread
         """
-        self.red_chanel_calc()
+        self.red_channel_calc()
         self.calculate_calibrate_film()
         self.calc_dose_map()
 
@@ -85,20 +85,20 @@ class Dose(QThread):
         """
         return (b / (od - a)) + c
 
-    def red_chanel_calc(self):
+    def red_channel_calc(self):
         """
         Calculate value in red channel of blank field
-        :return:
+        :return: od_blank
         """
-        blankFieldPath = self.zero_dose
-        im = tifimage.imread(blankFieldPath)
+        blank_field_path = self.zero_dose
+        im = tifimage.imread(blank_field_path)
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
-        odBlank = np.mean(imarray)
-        print("Blank field value: ", round(odBlank, 2))
+        od_blank = np.mean(imarray)
+        print("Blank field value: ", round(od_blank, 2))
 
-        DosesAndPaths.redChannelBlank = odBlank
-        return odBlank
+        DosesAndPaths.red_channel_blank = od_blank
+        return od_blank
 
     def calc_dose(self, path_to_film):
         """
@@ -107,8 +107,8 @@ class Dose(QThread):
         im = tifimage.imread(path_to_film)
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
-        redChannelCurrentTiff = np.mean(imarray)
-        od_current_dose = np.log10(DosesAndPaths.redChannelBlank / redChannelCurrentTiff)
+        red_channel_current_tiff = np.mean(imarray)
+        od_current_dose = np.log10(DosesAndPaths.red_channel_blank / red_channel_current_tiff)
 
         return od_current_dose
 
@@ -121,7 +121,9 @@ class Dose(QThread):
         Calculating dose for each file
         """
         # сначала считаем нулевую дозу
-        self.zero_dose = self.calc_dose(self.calibrate_list[0])
+        print(self.calibrate_list)
+        print(self.zero_dose)
+        self.zero_dose = self.calc_dose(list(self.calibrate_list)[0])
         # затем считаем для каждого файла с использованием посчитанной нулевой
         for i in self.calibrate_list:
             self.find_best_fit(i)
@@ -149,7 +151,7 @@ class Dose(QThread):
         print("\nPrepearing your file:\n")
 
         for i in np.nditer(imarray):
-            x = np.log10(DosesAndPaths.redChannelBlank / i)
+            x = np.log10(DosesAndPaths.red_channel_blank / i)
             x = x - self.zero_dose
             x = self.fit_func(x, *DosesAndPaths.p_opt)
             DosesAndPaths.z = np.append(DosesAndPaths.z, x)
@@ -173,7 +175,7 @@ class DosesAndPaths:
     empty_field_file = None
     irrad_film_file = None
     calculation_doses = list()
-    redChannelBlank = None
+    red_channel_blank = None
     p_opt = None
     doses = list()
     paths = list()
@@ -311,7 +313,7 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
             calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
                         DosesAndPaths.irrad_film_file,
                         DosesAndPaths.sigma)
-            calc.red_chanel_calc()
+            calc.red_channel_calc()
             calc.calculate_calibrate_film()
             GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
                                         DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph)
@@ -446,7 +448,8 @@ class CalcUI(QtWidgets.QMainWindow):
         :param event: onclick event
         ::param ax: existing dose map
         """
-        if event.inaxes == ax and len(DosesAndPaths.z) > 1:
+        state = self.toolbar_map.mode
+        if event.inaxes == ax and len(DosesAndPaths.z) > 1 and state == '':
             try:
                 self.cursor.onmove(event)
                 x, y = int(event.xdata), int(event.ydata)
