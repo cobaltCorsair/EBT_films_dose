@@ -139,33 +139,36 @@ class Dose(QThread):
         """
         Working with user image
         """
-        userImg = self.irradiation_film
-        zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-        im = tifimage.imread(userImg)
-        imarray = np.array(im, dtype=np.uint16)
-        imarray = (imarray[:, :, 0])
+        try:
+            userImg = self.irradiation_film
+            zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
+            im = tifimage.imread(userImg)
+            imarray = np.array(im, dtype=np.uint16)
+            imarray = (imarray[:, :, 0])
 
-        print("\nShape of scanned film:", np.shape(imarray))
-        progress = 0
-        counter = 0
-        print("\nPrepearing your file:\n")
-        # TODO: create except
-        for i in np.nditer(imarray):
-            x = np.log10(DosesAndPaths.red_channel_blank / i)
-            x = x - zero_dose_for_irrad_film
-            x = self.fit_func(x, *DosesAndPaths.p_opt)
-            DosesAndPaths.z = np.append(DosesAndPaths.z, x)
+            print("\nShape of scanned film:", np.shape(imarray))
+            progress = 0
+            counter = 0
+            print("\nPrepearing your file:\n")
+            # TODO: create except
+            for i in np.nditer(imarray):
+                x = np.log10(DosesAndPaths.red_channel_blank / i)
+                x = x - zero_dose_for_irrad_film
+                x = self.fit_func(x, *DosesAndPaths.p_opt)
+                DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
-            counter = counter + 1
-            if counter % 10000 == 0:
-                print("Iteration ", counter, "/", np.size(imarray))
-                progress += 1
-                self.progressChanged.emit(round(progress))
+                counter = counter + 1
+                if counter % 10000 == 0:
+                    print("Iteration ", counter, "/", np.size(imarray))
+                    progress += 1
+                    self.progressChanged.emit(round(progress))
 
-        DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
-        print("\nDose calculation ended!!!\n")
-        self.progressChanged.emit(100)
-        GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
+            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
+            print("\nDose calculation ended!!!\n")
+            self.progressChanged.emit(100)
+            GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
+        except ValueError:
+            print('No files found')
 
 
 class DosesAndPaths:
