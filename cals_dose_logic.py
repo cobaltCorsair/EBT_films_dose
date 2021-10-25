@@ -147,10 +147,10 @@ class Dose(QThread):
         progress = 0
         counter = 0
         print("\nPrepearing your file:\n")
-
+        # except
         for i in np.nditer(imarray):
             x = np.log10(DosesAndPaths.red_channel_blank / i)
-            x = x - self.zero_dose
+            x = x - self.zero_dose # для этого нужна отдельная кнопка, + посчитать calc_dose для этого
             x = self.fit_func(x, *DosesAndPaths.p_opt)
             DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
@@ -277,6 +277,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         self.curve_win = CurveWindow()
         self.curve_win.get_curve()
+        self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
         self.pushButton_5.setDisabled(True)
 
@@ -391,10 +392,16 @@ class CalcUI(QtWidgets.QMainWindow):
         self.graphic_dialog = None
         self.thread = None
 
-        self.scene = QtWidgets.QGraphicsScene()
-        self.pixmap = QtWidgets.QGraphicsPixmapItem()
-        self.scene.addItem(self.pixmap)
-        self.ui.graphicsView.setScene(self.scene)
+        # self.scene = QtWidgets.QGraphicsScene()
+        # self.pixmap = QtWidgets.QGraphicsPixmapItem()
+        # self.scene.addItem(self.pixmap)
+        # self.ui.graphicsView.setScene(self.scene)
+
+        self.image_map = plt.figure()
+        self.image_canvas = FigureCanvas(self.image_map)
+        self.image_toolbar = NavigationToolbar(self.image_canvas, self)
+        self.ui.verticalLayout.addWidget(self.image_toolbar)
+        self.ui.verticalLayout.addWidget(self.image_canvas)
 
         self.figure_map = plt.figure()
         self.canvas_map = FigureCanvas(self.figure_map)
@@ -437,8 +444,14 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Insert a picture of the film in the interface window
         """
-        img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
-        self.pixmap.setPixmap(img)
+        # img = QtGui.QPixmap(DosesAndPaths.irrad_film_file)
+        # self.pixmap.setPixmap(img)
+
+        self.image_map.clf()
+        img = plt.imread(DosesAndPaths.irrad_film_file)
+        ax = self.image_map.add_subplot(111)
+        ax.imshow(img)
+        self.image_canvas.draw()
 
     def onclick(self, event, ax):
         """
@@ -456,6 +469,7 @@ class CalcUI(QtWidgets.QMainWindow):
 
                 self.graphic_dialog = AxesWindow()
                 self.graphic_dialog.draw_graphics(slice_x, slice_y)
+                self.graphic_dialog.setMinimumSize(640, 480)
                 self.graphic_dialog.show()
             except IndexError:
                 print('Too many indices for array')
@@ -581,6 +595,6 @@ application = CalcUI()
 # win title
 application.setWindowTitle("Dose calculator")
 # set minimum size
-# application.setMaximumSize(800, 600)
+application.setMinimumSize(1200, 800)
 application.show()
 sys.exit(app.exec())
