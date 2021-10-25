@@ -57,9 +57,10 @@ class Dose(QThread):
     """
     progressChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zero_dose, calibrate_list, doses_list, irradiation_film, sigma):
+    def __init__(self, zero_dose, zero_dose_for_irrad_film, calibrate_list, doses_list, irradiation_film, sigma):
         super().__init__()
         self.zero_dose = zero_dose
+        self.zero_dose_for_irrad_film = zero_dose_for_irrad_film
         self.calibrate_list = calibrate_list
         self.irradiation_film = irradiation_film
         self.setting_doses = doses_list
@@ -139,6 +140,7 @@ class Dose(QThread):
         Working with user image
         """
         userImg = self.irradiation_film
+        zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
         im = tifimage.imread(userImg)
         imarray = np.array(im, dtype=np.uint16)
         imarray = (imarray[:, :, 0])
@@ -147,10 +149,10 @@ class Dose(QThread):
         progress = 0
         counter = 0
         print("\nPrepearing your file:\n")
-        # except
+        # TODO: create except
         for i in np.nditer(imarray):
             x = np.log10(DosesAndPaths.red_channel_blank / i)
-            x = x - self.zero_dose # для этого нужна отдельная кнопка, + посчитать calc_dose для этого
+            x = x - zero_dose_for_irrad_film
             x = self.fit_func(x, *DosesAndPaths.p_opt)
             DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
@@ -171,6 +173,7 @@ class DosesAndPaths:
     Data-class
     """
     empty_field_file = None
+    empty_scanner_field_file = None
     irrad_film_file = None
     calculation_doses = list()
     red_channel_blank = None
@@ -309,7 +312,8 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         Draw dose curve
         """
         try:
-            calc = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+            calc = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file, DosesAndPaths.paths,
+                        DosesAndPaths.doses,
                         DosesAndPaths.irrad_film_file,
                         DosesAndPaths.sigma)
             calc.red_channel_calc()
@@ -358,13 +362,13 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
-        ax_x.grid(True, linestyle = "-.")
+        ax_x.grid(True, linestyle="-.")
         ax_x.plot(slice_x)
         self.canvas_map_x.draw()
 
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
-        ax_y.grid(True, linestyle = "-.")
+        ax_y.grid(True, linestyle="-.")
         ax_y.plot(slice_y)
         self.canvas_map_y.draw()
 
@@ -413,8 +417,9 @@ class CalcUI(QtWidgets.QMainWindow):
         # Set cursor
         self.cursor = None
 
-        self.ui.pushButton_5.clicked.connect(self.get_empty_field_file)
+        self.ui.pushButton_5.clicked.connect(self.get_empty_scanner_field_file)
         self.ui.pushButton_7.clicked.connect(self.get_irrad_film_file)
+        self.ui.pushButton.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_2.clicked.connect(SaveLoadData.create_json)
@@ -430,15 +435,25 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
             self.ui.lineEdit_3.setDisabled(True)
 
-    def get_empty_field_file(self):
+    def get_empty_scanner_field_file(self):
         """
-        Find and paste the empty file in tiff format
+        Find and paste the empty scanner file in tiff format
         """
         self.ui.lineEdit_2.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_2.text()) != 0:
-            DosesAndPaths.empty_field_file = self.ui.lineEdit_2.text()
+            DosesAndPaths.empty_scanner_field_file = self.ui.lineEdit_2.text()
             self.ui.lineEdit_2.setDisabled(True)
+
+    def get_empty_field_file(self):
+        """
+        Find and paste the empty file in tiff format
+        """
+        self.ui.lineEdit.setText(self.search_file('*.tif'))
+
+        if len(self.ui.lineEdit.text()) != 0:
+            DosesAndPaths.empty_field_file = self.ui.lineEdit.text()
+            self.ui.lineEdit.setDisabled(True)
 
     def insert_tiff_file(self):
         """
@@ -518,10 +533,11 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Running the calculation in the thread
         """
-        if DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_file is not None \
+        if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.irrad_film_file is not None \
                 and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
             DosesAndPaths.z = list()
-            self.thread = Dose(DosesAndPaths.empty_field_file, DosesAndPaths.paths, DosesAndPaths.doses,
+            self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
+                               DosesAndPaths.paths, DosesAndPaths.doses,
                                DosesAndPaths.irrad_film_file,
                                DosesAndPaths.sigma)
             self.thread.start()
@@ -545,8 +561,8 @@ class SaveLoadData:
             data['calibrate_list'].append(dose_path_data)
         if DosesAndPaths.sigma is not 0:
             data['sigma'] = DosesAndPaths.sigma
-        if DosesAndPaths.empty_field_file is not None:
-            data['empty_field_file'] = DosesAndPaths.empty_field_file
+        if DosesAndPaths.empty_scanner_field_file is not None:
+            data['empty_scanner_field_file'] = DosesAndPaths.empty_scanner_field_file
 
         SaveLoadData.save_json(data)
 
@@ -579,9 +595,9 @@ class SaveLoadData:
                     DosesAndPaths.paths = p.values()
 
                 DosesAndPaths.sigma = data['sigma']
-                DosesAndPaths.empty_field_file = data['empty_field_file']
+                DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
 
-                application.ui.lineEdit_2.setText(DosesAndPaths.empty_field_file)
+                application.ui.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
 
 
 app = QtWidgets.QApplication([])

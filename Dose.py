@@ -150,7 +150,7 @@ class Ui_MainWindow(object):
         self.label_11.setText(_translate("MainWindow", "Get old save"))
         self.pushButton_8.setText(_translate("MainWindow", "Select"))
         self.pushButton_3.setText(_translate("MainWindow", "Load"))
-        self.pushButton_5.setText(_translate("MainWindow", "Empty scaner field"))
+        self.pushButton_5.setText(_translate("MainWindow", "Empty scanner field"))
         self.pushButton.setText(_translate("MainWindow", "Empty field"))
         self.pushButton_7.setText(_translate("MainWindow", "Iirradiate film"))
         self.pushButton_4.setText(_translate("MainWindow", "Calculate dose"))
