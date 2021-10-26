@@ -114,6 +114,9 @@ class Dose(QThread):
         return od_current_dose
 
     def find_best_fit(self, path_to_film):
+        """
+        Finding best fit dose and writes it to the list
+        """
         od_current_dose = self.calc_dose(path_to_film) - self.zero_dose
         DosesAndPaths.calculation_doses.append(od_current_dose)
 
@@ -150,7 +153,6 @@ class Dose(QThread):
             progress = 0
             counter = 0
             print("\nPrepearing your file:\n")
-            # TODO: create except
             for i in np.nditer(imarray):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
@@ -188,7 +190,9 @@ class DosesAndPaths:
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
-    """UI class for displaying dose/path list"""
+    """
+    UI class for displaying dose/path list
+    """
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -288,6 +292,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_5.setDisabled(True)
 
     def create_widgets_second_open(self):
+        """
+        The method restores the fields created by the user when the window is reopened
+        """
         data_count = len(DosesAndPaths.doses)
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
@@ -528,8 +535,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Running the calculation in the thread
         """
-        if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.irrad_film_file is not None \
-                and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
+        if self.check_fields():
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                                DosesAndPaths.paths, DosesAndPaths.doses,
@@ -538,6 +544,16 @@ class CalcUI(QtWidgets.QMainWindow):
             self.thread.start()
             self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
+
+    @staticmethod
+    def check_fields():
+        """
+        Check fields for validity
+        """
+        if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.empty_field_file is not None \
+                and DosesAndPaths.irrad_film_file is not None and len(DosesAndPaths.paths) > 0 \
+                and len(DosesAndPaths.doses) > 0:
+            return True
 
 
 class SaveLoadData:
