@@ -4,14 +4,12 @@ import os
 import sys
 import json
 import matplotlib.pyplot as plt
-
-plt.switch_backend('agg')
 import numpy as np
 import tifffile as tifimage
 import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
 from scipy.optimize import curve_fit
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -19,6 +17,7 @@ from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
+plt.switch_backend('agg')
 
 
 class GraphicsPlotting:
@@ -114,6 +113,9 @@ class Dose(QThread):
         return od_current_dose
 
     def find_best_fit(self, path_to_film):
+        """
+        Finding best fit dose and writes it to the list
+        """
         od_current_dose = self.calc_dose(path_to_film) - self.zero_dose
         DosesAndPaths.calculation_doses.append(od_current_dose)
 
@@ -140,9 +142,9 @@ class Dose(QThread):
         Working with user image
         """
         try:
-            userImg = self.irradiation_film
+            user_img = self.irradiation_film
             zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-            im = tifimage.imread(userImg)
+            im = tifimage.imread(user_img)
             imarray = np.array(im, dtype=np.uint16)
             imarray = (imarray[:, :, 0])
 
@@ -150,7 +152,6 @@ class Dose(QThread):
             progress = 0
             counter = 0
             print("\nPrepearing your file:\n")
-            # TODO: create except
             for i in np.nditer(imarray):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
@@ -188,7 +189,9 @@ class DosesAndPaths:
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
-    """UI class for displaying dose/path list"""
+    """
+    UI class for displaying dose/path list
+    """
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -244,8 +247,8 @@ class Form(QtWidgets.QWidget, Ui_Form):
         if index != 5:
             for i in range(3):
                 index -= 1
-                myWidget = self.gridLayout_3.itemAt(index).widget()
-                myWidget.setParent(None)
+                my_widget = self.gridLayout_3.itemAt(index).widget()
+                my_widget.setParent(None)
                 self.adjustSize()
 
     def get_all_params_widgets(self):
@@ -288,6 +291,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_5.setDisabled(True)
 
     def create_widgets_second_open(self):
+        """
+        The method restores the fields created by the user when the window is reopened
+        """
         data_count = len(DosesAndPaths.doses)
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
@@ -528,8 +534,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Running the calculation in the thread
         """
-        if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.irrad_film_file is not None \
-                and len(DosesAndPaths.paths) > 0 and len(DosesAndPaths.doses) > 0:
+        if self.check_fields():
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                                DosesAndPaths.paths, DosesAndPaths.doses,
@@ -538,6 +543,16 @@ class CalcUI(QtWidgets.QMainWindow):
             self.thread.start()
             self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
+
+    @staticmethod
+    def check_fields():
+        """
+        Check fields for validity
+        """
+        if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.empty_field_file is not None \
+                and DosesAndPaths.irrad_film_file is not None and len(DosesAndPaths.paths) > 0 \
+                and len(DosesAndPaths.doses) > 0:
+            return True
 
 
 class SaveLoadData:
@@ -567,7 +582,7 @@ class SaveLoadData:
         Save json file
         :param data: json object
         """
-        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty field file',
+        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty scanner field file',
                                                   'calibrate_and_empty.json',
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
