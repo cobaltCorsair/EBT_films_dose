@@ -4,14 +4,12 @@ import os
 import sys
 import json
 import matplotlib.pyplot as plt
-
-plt.switch_backend('agg')
 import numpy as np
 import tifffile as tifimage
 import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
 from scipy.optimize import curve_fit
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -19,6 +17,7 @@ from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
+plt.switch_backend('agg')
 
 
 class GraphicsPlotting:
@@ -143,9 +142,9 @@ class Dose(QThread):
         Working with user image
         """
         try:
-            userImg = self.irradiation_film
+            user_img = self.irradiation_film
             zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-            im = tifimage.imread(userImg)
+            im = tifimage.imread(user_img)
             imarray = np.array(im, dtype=np.uint16)
             imarray = (imarray[:, :, 0])
 
@@ -248,8 +247,8 @@ class Form(QtWidgets.QWidget, Ui_Form):
         if index != 5:
             for i in range(3):
                 index -= 1
-                myWidget = self.gridLayout_3.itemAt(index).widget()
-                myWidget.setParent(None)
+                my_widget = self.gridLayout_3.itemAt(index).widget()
+                my_widget.setParent(None)
                 self.adjustSize()
 
     def get_all_params_widgets(self):
@@ -583,7 +582,7 @@ class SaveLoadData:
         Save json file
         :param data: json object
         """
-        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty field file',
+        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty scanner field file',
                                                   'calibrate_and_empty.json',
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
