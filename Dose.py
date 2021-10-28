@@ -146,12 +146,12 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.label_10.setText(_translate("MainWindow", "Calibrate list"))
+        self.label_10.setText(_translate("MainWindow", "Calibration list"))
         self.label_11.setText(_translate("MainWindow", "Get old save"))
         self.pushButton_8.setText(_translate("MainWindow", "Select"))
         self.pushButton_3.setText(_translate("MainWindow", "Load"))
         self.pushButton_5.setText(_translate("MainWindow", "Empty scanner field"))
-        self.pushButton.setText(_translate("MainWindow", "Empty field"))
-        self.pushButton_7.setText(_translate("MainWindow", "Iirradiate film"))
+        self.pushButton.setText(_translate("MainWindow", "Unexposed film"))
+        self.pushButton_7.setText(_translate("MainWindow", "Exposed film"))
         self.pushButton_4.setText(_translate("MainWindow", "Calculate dose"))
         self.pushButton_2.setText(_translate("MainWindow", "Save calibration as JSON"))

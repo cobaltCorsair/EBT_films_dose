@@ -36,17 +36,20 @@ class GraphicsPlotting:
         application.canvas_map.draw()
 
     @staticmethod
-    def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph):
+    def draw_curve(func, calculation_doses, setting_doses, p_opt, figure_graph, canvas_graph, sigma):
         """
         This method draws dose curve
         """
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.plot(calculation_doses, setting_doses, ".k", markersize=6, label="Measurements")
-        ax.plot(calculation_doses, func(calculation_doses, *p_opt))
+        ax.errorbar(calculation_doses, setting_doses, yerr = np.array(setting_doses[0:]) * (sigma / 100), fmt='ro', label = "Data points", markersize=6, capsize=5)
+        ax.plot(calculation_doses, func(calculation_doses, *p_opt), label = "Fit function", color = "black", linestyle = "-.")
         ax.grid(True, linestyle="-.")
+        ax.legend(loc = "best")
         ax.set_ylabel('Absorbed dose, Gy')
         ax.set_xlabel('Relative optical density')
+        ax.set_xlim(0,np.max(calculation_doses) + 0.015)
+        ax.set_ylim(0,np.max(setting_doses) + 0.5)
         canvas_graph.draw()
 
 
@@ -322,13 +325,12 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         """
         try:
             calc = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file, DosesAndPaths.paths,
-                        DosesAndPaths.doses,
-                        DosesAndPaths.irrad_film_file,
-                        DosesAndPaths.sigma)
+                    DosesAndPaths.doses,
+                    DosesAndPaths.irrad_film_file,DosesAndPaths.sigma)
             calc.red_channel_calc()
             calc.calculate_calibrate_film()
             GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
-                                        DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph)
+                                DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph, DosesAndPaths.sigma)
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
