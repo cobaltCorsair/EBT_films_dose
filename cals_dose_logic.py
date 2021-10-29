@@ -17,7 +17,15 @@ from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+
+
 plt.switch_backend('agg')
+
+client = MongoClient('mongodb://10.1.30.32:27017/')
+db = client['EBT_films_dose']
+collectionTifProvider = db['tifProvider']
 
 
 class GraphicsPlotting:
@@ -324,6 +332,7 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         Draw dose curve
         """
         try:
+        #if True:
             calc = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file, DosesAndPaths.paths,
                     DosesAndPaths.doses,
                     DosesAndPaths.irrad_film_file,DosesAndPaths.sigma)
@@ -429,7 +438,8 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_2.clicked.connect(SaveLoadData.create_json)
-        self.ui.pushButton_3.clicked.connect(SaveLoadData.load_json)
+        #self.ui.pushButton_3.clicked.connect(SaveLoadData.load_json)
+        self.ui.pushButton_3.clicked.connect(SaveLoadData.load_mongo)
 
     def get_irrad_film_file(self):
         """
@@ -610,6 +620,16 @@ class SaveLoadData:
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
 
                 application.ui.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
+
+    @staticmethod
+    def load_mongo():
+        tg = {'ebtLotNo': '05062003', 'hoursAfterIrrad': 24, 'facilityIdentifier': 'Co-60 (MRRC)',
+              'dose': {'$lt': 40.0}}
+        DosesAndPaths.doses = []
+        DosesAndPaths.paths = []
+        for post in collectionTifProvider.find(tg).sort('dose'):
+            DosesAndPaths.doses.append(post['dose'])
+            DosesAndPaths.paths.append(post['originalTifPath'])
 
 
 app = QtWidgets.QApplication([])
