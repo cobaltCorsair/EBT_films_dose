@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from pymongo import MongoClient
 from bson.objectid import ObjectId
-import numpy as np
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -19,13 +18,17 @@ collectionODCurves = db['ODCurves']
 postTifProvider = {
     'dose': 1.0,
     'originalTifPath': '',
-    'isZeroFil': False,
+    'isZeroFilm': False,
     'meanRedChannel': 50000.00,
     'medianRedChannel': 50000,
     'sigmaRedChannel': 374.22,
-    'opticalDensity': 0.7,
+    'log10mean': 0.7,
+    'log10meanReciprocalBlankFilm': 0.4,
+    'log10meanMinusZeroFilm': 0.2,
     'ebtLotNo': '#3240017',
-    'facilityIdentifier': 'Co-60'
+    'facilityIdentifier': 'Co-60',
+    'hoursAfterIrrad': 24,
+    'dpi': 150,
 }
 
 
