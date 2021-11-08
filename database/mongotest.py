@@ -7,10 +7,10 @@ import os
 import tifffile as tifimage
 
 
-client = MongoClient('mongodb://localhost:27017/')
-#client = MongoClient('mongodb://10.1.30.32:27017/')
+#client = MongoClient('mongodb://localhost:27017/')
+client = MongoClient('mongodb://10.1.30.32:27017/')
 db = client['EBT_films_dose']
-#collectionTifProvider = db['tifProvider']
+collectionTifProvider = db['tifProvider']
 collectionODCurves = db['ODCurves']
 #collectionPOpts = db['POpts']
 
@@ -43,13 +43,13 @@ postODCurves = {
 pid = ObjectId("6179019369a8873c2afcfa42")
 print(pid)
 
-pidCurves = collectionODCurves.find_one({"_id": pid})
-p = pidCurves['doses']
-d = pidCurves['OD']
-pdnp = np.zeros([len(p), 2])
-pdnp[:, 0] = p
-pdnp[:, 1] = d
-print(pdnp)
+#pidCurves = collectionODCurves.find_one({"_id": pid})
+#p = pidCurves['doses']
+#d = pidCurves['OD']
+#pdnp = np.zeros([len(p), 2])
+#pdnp[:, 0] = p
+#pdnp[:, 1] = d
+#print(pdnp)
 
 
 
@@ -58,3 +58,8 @@ postPOpts = {
     'facilityIdentifier': 'Co-60',
     'popt': [],
 }
+
+import dbProxy
+
+print(dbProxy.getData4CalibrationCurve(collectionTifProvider, 'Co-60 (MRRC)', '01171702', 24))
+print(dbProxy.getData4CalibrationCurveWithDoseHighLimit(collectionTifProvider, 'Co-60 (MRRC)', '01171702', 24, 12.0))
