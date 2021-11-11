@@ -17,6 +17,7 @@ from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
+from Values import Ui_Form as Values_form
 
 plt.switch_backend('agg')
 
@@ -204,8 +205,10 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.widget_count = 0
         self.all_widgets = None
         self.curve_win = None
+        self.value_win = None
 
         self.pushButton_5.setDisabled(True)
+        self.pushButton_9.setDisabled(True)
 
         self.pushButton.clicked.connect(lambda: self.get_empty_field_file(self.lineEdit))
         self.pushButton_2.clicked.connect(self.dynamic_add_fields)
@@ -214,6 +217,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.pushButton_5.clicked.connect(self.draw_curve)
         self.pushButton_8.clicked.connect(SaveLoadData.create_json)
         self.pushButton_6.clicked.connect(lambda: self.get_empty_field_file(self.lineEdit_2))
+        self.pushButton_9.clicked.connect(self.get_values)
 
     def search_file(self):
         """
@@ -298,6 +302,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
         self.pushButton_5.setDisabled(True)
+        self.pushButton_9.setDisabled(False)
 
     def create_widgets_second_open(self):
         """
@@ -324,6 +329,27 @@ class Form(QtWidgets.QWidget, Ui_Form):
 
         self.spinBox.setValue(DosesAndPaths.sigma)
         self.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
+
+    def get_values(self):
+        """
+        Get the values of doses, calculation doses and p_opt in dialog window
+        """
+        self.value_win = ValuesWindow()
+        if len(DosesAndPaths.calculation_doses) > 0:
+            self.value_win.plainTextEdit.appendPlainText(('points: ' + str(DosesAndPaths.doses)))
+            self.value_win.plainTextEdit.appendPlainText(('doses: ' + str(DosesAndPaths.calculation_doses)))
+            self.value_win.plainTextEdit.appendPlainText(('p_opt: ' + str(DosesAndPaths.p_opt)))
+        self.value_win.show()
+
+
+class ValuesWindow(QtWidgets.QWidget, Values_form):
+    """
+    Class of the dialog window with a values
+    """
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setupUi(self)
+
 
 class CurveWindow(QtWidgets.QWidget, Curve_form):
     """
@@ -374,6 +400,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
+        self.value_win = None
 
         self.figure_map_x = plt.figure()
         self.canvas_map_x = FigureCanvas(self.figure_map_x)
@@ -398,12 +425,28 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_x.grid(True, linestyle="-.")
         ax_x.plot(slice_x)
         self.canvas_map_x.draw()
+        self.pushButton.clicked.connect(lambda: self.get_values(slice_x, 'X axis'))
 
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
         ax_y.plot(slice_y)
         self.canvas_map_y.draw()
+        self.pushButton_3.clicked.connect(lambda: self.get_values(slice_y, 'Y axis'))
+
+    def get_values(self, values, ax_name):
+        """
+        Get the values of doses on the axis in dialog window
+        :param values: values of doses
+        :param ax_name: name of the axis
+        """
+        self.value_win = ValuesWindow()
+        self.value_win.label.setText(ax_name)
+        text_values = ' '.join(map(str, values))
+        print(text_values)
+        if len(values) > 0:
+            self.value_win.plainTextEdit.appendPlainText(text_values)
+        self.value_win.show()
 
     def closeEvent(self, event):
         """

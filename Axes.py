@@ -65,7 +65,7 @@ class Ui_Form(object):
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
         Form.setWindowTitle(_translate("Form", "Form"))
-        self.label.setText(_translate("Form", "Y-axis"))
-        self.label_2.setText(_translate("Form", "X-axis"))
-        self.pushButton.setText(_translate("Form", "Get dose Y on curve"))
-        self.pushButton_3.setText(_translate("Form", "Get dose X on curve"))
+        self.label.setText(_translate("Form", "X-axis"))
+        self.label_2.setText(_translate("Form", "Y-axis"))
+        self.pushButton.setText(_translate("Form", "Get dose X on curve"))
+        self.pushButton_3.setText(_translate("Form", "Get dose Y on curve"))
