@@ -442,10 +442,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         self.value_win = ValuesWindow()
         self.value_win.label.setText(ax_name)
-        text_values = ' '.join(map(str, values))
-        print(text_values)
         if len(values) > 0:
-            self.value_win.plainTextEdit.appendPlainText(text_values)
+            self.value_win.plainTextEdit.appendPlainText(' '.join(map(str, values)))
         self.value_win.show()
 
     def closeEvent(self, event):
