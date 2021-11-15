@@ -658,7 +658,7 @@ class SaveLoadData:
                 with open(filename, 'w') as outfile:
                     json.dump(data, outfile, ensure_ascii=False, indent=4)
             except OSError:
-                QMessageBox.critical(None, "Ошибка ", "<b>Incorrect name</b><br><br>"
+                QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
                                                       "Please re-save the file using the correct name without special "
                                                       "characters",
                                      QMessageBox.Ok)
