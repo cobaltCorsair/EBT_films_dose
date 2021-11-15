@@ -529,7 +529,6 @@ class CalcUI(QtWidgets.QMainWindow):
         Set DPI value in variable
         """
         DosesAndPaths.basis_formatter = 25.4 / self.ui.spinBox.value()
-        print(DosesAndPaths.basis_formatter)
 
     def insert_tiff_file(self):
         """
