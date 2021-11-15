@@ -81,6 +81,7 @@ class Ui_Form(object):
         self.gridLayout_3.setObjectName("gridLayout_3")
         self.doubleSpinBox = QtWidgets.QDoubleSpinBox(Form)
         self.doubleSpinBox.setObjectName("doubleSpinBox")
+        self.doubleSpinBox.setDisabled(True)
         self.gridLayout_3.addWidget(self.doubleSpinBox, 1, 0, 1, 1)
         self.lineEdit = QtWidgets.QLineEdit(Form)
         self.lineEdit.setObjectName("lineEdit")

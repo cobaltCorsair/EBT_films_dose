@@ -10,7 +10,7 @@ import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
 from scipy.optimize import curve_fit
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from Dose import Ui_MainWindow
@@ -654,8 +654,14 @@ class SaveLoadData:
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
-            with open(filename, 'w') as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
+            try:
+                with open(filename, 'w') as outfile:
+                    json.dump(data, outfile, ensure_ascii=False, indent=4)
+            except OSError:
+                QMessageBox.critical(None, "Ошибка ", "<b>Incorrect name</b><br><br>"
+                                                      "Please re-save the file using the correct name without special "
+                                                      "characters",
+                                     QMessageBox.Ok)
 
     @staticmethod
     def load_json():
