@@ -341,8 +341,8 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.value_win = ValuesWindow()
         if len(DosesAndPaths.calculation_doses) > 0:
             self.value_win.plainTextEdit.appendPlainText(('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\n OPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\n POLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
         self.value_win.show()
 
 
