@@ -34,6 +34,9 @@ class GraphicsPlotting:
         application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
         application.canvas_map.draw()
         im3 = ax.imshow(z, cmap="jet", vmin=0)
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
         application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
         application.canvas_map.draw()
 
@@ -192,6 +195,7 @@ class DosesAndPaths:
     paths = list()
     sigma = 0
     z = list()
+    basis_formatter = 0.17
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -420,17 +424,25 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         :param slice_x: Set of values along the X-axis
         :param slice_y: Set of values along the Y-axis
         """
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+
+        # x axis
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
         ax_x.plot(slice_x)
+        ax_x.xaxis.set_major_formatter(formatter)
+        ax_x.yaxis.set_major_formatter(formatter)
         self.canvas_map_x.draw()
         self.pushButton.clicked.connect(lambda: self.get_values(slice_x, 'X axis'))
 
+        # y axis
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
         ax_y.plot(slice_y)
+        ax_y.xaxis.set_major_formatter(formatter)
+        ax_y.yaxis.set_major_formatter(formatter)
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_y, 'Y axis'))
 
@@ -512,6 +524,13 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.empty_field_file = self.ui.lineEdit.text()
             self.ui.lineEdit.setDisabled(True)
 
+    def get_dpi_value(self):
+        """
+        Set DPI value in variable
+        """
+        DosesAndPaths.basis_formatter = 25.4 / self.ui.spinBox.value()
+        print(DosesAndPaths.basis_formatter)
+
     def insert_tiff_file(self):
         """
         Insert a picture of the film in the interface window
@@ -572,6 +591,8 @@ class CalcUI(QtWidgets.QMainWindow):
         Running the calculation in the thread
         """
         if self.check_fields():
+            self.get_dpi_value()
+
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                                DosesAndPaths.paths, DosesAndPaths.doses,
@@ -588,7 +609,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.empty_field_file is not None \
                 and DosesAndPaths.irrad_film_file is not None and len(DosesAndPaths.paths) > 0 \
-                and len(DosesAndPaths.doses) > 0:
+                and len(DosesAndPaths.doses) > 0 and DosesAndPaths.basis_formatter > 0:
             return True
 
 
