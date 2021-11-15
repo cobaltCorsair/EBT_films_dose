@@ -340,9 +340,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         self.value_win = ValuesWindow()
         if len(DosesAndPaths.calculation_doses) > 0:
-            self.value_win.plainTextEdit.appendPlainText(('points: ' + str(DosesAndPaths.doses)))
-            self.value_win.plainTextEdit.appendPlainText(('doses: ' + str(DosesAndPaths.calculation_doses)))
-            self.value_win.plainTextEdit.appendPlainText(('p_opt: ' + str(DosesAndPaths.p_opt)))
+            self.value_win.plainTextEdit.appendPlainText(('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\n OPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\n POLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
         self.value_win.show()
 
 
@@ -350,6 +350,7 @@ class ValuesWindow(QtWidgets.QWidget, Values_form):
     """
     Class of the dialog window with a values
     """
+
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
@@ -433,6 +434,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_x.plot(slice_x)
         ax_x.xaxis.set_major_formatter(formatter)
         ax_x.yaxis.set_major_formatter(formatter)
+        ax_x.set_xlabel('mm')
+        ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
         self.pushButton.clicked.connect(lambda: self.get_values(slice_x, 'X axis'))
 
@@ -443,6 +446,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_y.plot(slice_y)
         ax_y.xaxis.set_major_formatter(formatter)
         ax_y.yaxis.set_major_formatter(formatter)
+        ax_y.set_xlabel('mm')
+        ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_y, 'Y axis'))
 
@@ -454,8 +459,9 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         self.value_win = ValuesWindow()
         self.value_win.label.setText(ax_name)
+        values_with_separator = ('\n'.join(map(str, [round(x, 4) for x in values]))).replace('.', ',')
         if len(values) > 0:
-            self.value_win.plainTextEdit.appendPlainText(' '.join(map(str, values)))
+            self.value_win.plainTextEdit.appendPlainText(values_with_separator)
         self.value_win.show()
 
     def closeEvent(self, event):
@@ -534,9 +540,13 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Insert a picture of the film in the interface window
         """
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+
         self.image_map.clf()
         img = plt.imread(DosesAndPaths.irrad_film_file)
         ax = self.image_map.add_subplot(111)
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
         ax.imshow(img)
         self.image_canvas.draw()
 
