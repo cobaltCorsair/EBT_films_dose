@@ -18,6 +18,8 @@ from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
 from Values import Ui_Form as Values_form
+from pymongo import MongoClient
+from database import dbProxy
 
 plt.switch_backend('agg')
 
@@ -79,7 +81,8 @@ class Dose(QThread):
         Start thread
         """
         self.red_channel_calc()
-        self.calculate_calibrate_film()
+        #self.calculate_calibrate_film()
+        self.buildPOptFromDatabase()
         self.calc_dose_map()
 
     @staticmethod
@@ -145,6 +148,22 @@ class Dose(QThread):
         except (ValueError, RuntimeError):
 
             print('Incorrect sigma value')
+
+    def buildPOptFromDatabase(self):
+        """
+        Building *popt matrix from curve_fit from database data
+        """
+        client = MongoClient('mongodb://10.1.30.32:27017/')
+        db = client['EBT_films_dose']
+        collectionTifProvider = db['tifProvider']
+        dDose = dbProxy.getData4CalibrationCurveWithDoseHighLimit(collectionTifProvider, 'Co-60 (MRRC)', '12131903', 24, 16.0)
+        print(dDose)
+        #pOpt, pCov = curve_fit(self.fit_func, np.array(list(dDose.keys())), np.array(list(dDose.values())),
+        #                       sigma=np.array(list(dDose.values()))*(self.sigma / 100.))
+        pOpt, pCov = curve_fit(self.fit_func, np.array(list(dDose.values())), np.array(list(dDose.keys())))
+        DosesAndPaths.p_opt = pOpt
+
+
 
     def calc_dose_map(self):
         """
