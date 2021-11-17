@@ -10,22 +10,16 @@ import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
 from scipy.optimize import curve_fit
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
-from pymongo import MongoClient
-from bson.objectid import ObjectId
-
+from Values import Ui_Form as Values_form
 
 plt.switch_backend('agg')
-
-client = MongoClient('mongodb://10.1.30.32:27017/')
-db = client['EBT_films_dose']
-collectionTifProvider = db['tifProvider']
 
 
 class GraphicsPlotting:
@@ -40,6 +34,9 @@ class GraphicsPlotting:
         application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
         application.canvas_map.draw()
         im3 = ax.imshow(z, cmap="jet", vmin=0)
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
         application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
         application.canvas_map.draw()
 
@@ -50,14 +47,15 @@ class GraphicsPlotting:
         """
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.errorbar(calculation_doses, setting_doses, yerr = np.array(setting_doses[0:]) * (sigma / 100), fmt='ro', label = "Data points", markersize=6, capsize=5)
-        ax.plot(calculation_doses, func(calculation_doses, *p_opt), label = "Fit function", color = "black", linestyle = "-.")
+        ax.errorbar(calculation_doses, setting_doses, yerr=np.array(setting_doses[0:]) * (sigma / 100), fmt='ro',
+                    label="Data points", markersize=6, capsize=5)
+        ax.plot(calculation_doses, func(calculation_doses, *p_opt), label="Fit function", color="black", linestyle="-.")
         ax.grid(True, linestyle="-.")
-        ax.legend(loc = "best")
+        ax.legend(loc="best")
         ax.set_ylabel('Absorbed dose, Gy')
         ax.set_xlabel('Relative optical density')
-        ax.set_xlim(0,np.max(calculation_doses) + 0.015)
-        ax.set_ylim(0,np.max(setting_doses) + 0.5)
+        ax.set_xlim(0, np.max(calculation_doses) + 0.015)
+        ax.set_ylim(0, np.max(setting_doses) + 0.5)
         canvas_graph.draw()
 
 
@@ -197,6 +195,7 @@ class DosesAndPaths:
     paths = list()
     sigma = 0
     z = list()
+    basis_formatter = 0.17
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -210,14 +209,19 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.widget_count = 0
         self.all_widgets = None
         self.curve_win = None
+        self.value_win = None
 
         self.pushButton_5.setDisabled(True)
+        self.pushButton_9.setDisabled(True)
 
         self.pushButton.clicked.connect(lambda: self.get_empty_field_file(self.lineEdit))
         self.pushButton_2.clicked.connect(self.dynamic_add_fields)
         self.pushButton_3.clicked.connect(self.dynamic_delete_fields)
         self.pushButton_4.clicked.connect(self.get_all_params_widgets)
         self.pushButton_5.clicked.connect(self.draw_curve)
+        self.pushButton_8.clicked.connect(SaveLoadData.create_json)
+        self.pushButton_6.clicked.connect(lambda: self.get_empty_field_file(self.lineEdit_2))
+        self.pushButton_9.clicked.connect(self.get_values)
 
     def search_file(self):
         """
@@ -249,6 +253,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         push_button.clicked.connect(lambda: self.get_empty_field_file(qline_edit))
 
         self.widget_count += 1
+        self.adjustSize()
 
     def dynamic_delete_fields(self):
         """
@@ -280,6 +285,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
         DosesAndPaths.sigma = sigma
+        DosesAndPaths.empty_scanner_field_file = self.lineEdit_2.text()
         DosesAndPaths.calculation_doses.clear()
 
         self.get_enabled_curve_drawing()
@@ -300,6 +306,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
         self.pushButton_5.setDisabled(True)
+        self.pushButton_9.setDisabled(False)
 
     def create_widgets_second_open(self):
         """
@@ -309,6 +316,44 @@ class Form(QtWidgets.QWidget, Ui_Form):
         if self.gridLayout_3.count() >= 5 and data_count > 1:
             for i in range(data_count - 1):
                 self.dynamic_add_fields()
+
+    def insert_data_in_fields(self):
+        """
+        Fill in the dialog window with doses and paths when opening
+        """
+        widgets = [self.gridLayout_3.itemAt(i).widget() for i in range(self.gridLayout_3.count())]
+        lineedits = [i for i in widgets if isinstance(i, QLineEdit)]
+        spinboxes = [i for i in widgets if isinstance(i, QDoubleSpinBox)]
+
+        for path, dose, line, spin in zip(DosesAndPaths.paths, DosesAndPaths.doses, lineedits, spinboxes):
+            if isinstance(line, QLineEdit):
+                line.setText(path)
+            if isinstance(spin, QDoubleSpinBox):
+                spin.setValue((float(dose)))
+
+        self.spinBox.setValue(DosesAndPaths.sigma)
+        self.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
+
+    def get_values(self):
+        """
+        Get the values of doses, calculation doses and p_opt in dialog window
+        """
+        self.value_win = ValuesWindow()
+        if len(DosesAndPaths.calculation_doses) > 0:
+            self.value_win.plainTextEdit.appendPlainText(('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
+        self.value_win.show()
+
+
+class ValuesWindow(QtWidgets.QWidget, Values_form):
+    """
+    Class of the dialog window with a values
+    """
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setupUi(self)
 
 
 class CurveWindow(QtWidgets.QWidget, Curve_form):
@@ -332,14 +377,13 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         Draw dose curve
         """
         try:
-        #if True:
             calc = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file, DosesAndPaths.paths,
-                    DosesAndPaths.doses,
-                    DosesAndPaths.irrad_film_file,DosesAndPaths.sigma)
+                        DosesAndPaths.doses,
+                        DosesAndPaths.irrad_film_file, DosesAndPaths.sigma)
             calc.red_channel_calc()
             calc.calculate_calibrate_film()
             GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
-                                DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph, DosesAndPaths.sigma)
+                                        DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph, DosesAndPaths.sigma)
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
@@ -361,6 +405,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
+        self.value_win = None
 
         self.figure_map_x = plt.figure()
         self.canvas_map_x = FigureCanvas(self.figure_map_x)
@@ -380,17 +425,44 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         :param slice_x: Set of values along the X-axis
         :param slice_y: Set of values along the Y-axis
         """
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+
+        # x axis
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
         ax_x.plot(slice_x)
+        ax_x.xaxis.set_major_formatter(formatter)
+        ax_x.yaxis.set_major_formatter(formatter)
+        ax_x.set_xlabel('mm')
+        ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
+        self.pushButton.clicked.connect(lambda: self.get_values(slice_x, 'X axis'))
 
+        # y axis
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
         ax_y.plot(slice_y)
+        ax_y.xaxis.set_major_formatter(formatter)
+        ax_y.yaxis.set_major_formatter(formatter)
+        ax_y.set_xlabel('mm')
+        ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
+        self.pushButton_3.clicked.connect(lambda: self.get_values(slice_y, 'Y axis'))
+
+    def get_values(self, values, ax_name):
+        """
+        Get the values of doses on the axis in dialog window
+        :param values: values of doses
+        :param ax_name: name of the axis
+        """
+        self.value_win = ValuesWindow()
+        self.value_win.label.setText(ax_name)
+        values_with_separator = ('\n'.join(map(str, [round(x, 4) for x in values]))).replace('.', ',')
+        if len(values) > 0:
+            self.value_win.plainTextEdit.appendPlainText(values_with_separator)
+        self.value_win.show()
 
     def closeEvent(self, event):
         """
@@ -432,14 +504,11 @@ class CalcUI(QtWidgets.QMainWindow):
         # Set cursor
         self.cursor = None
 
-        self.ui.pushButton_5.clicked.connect(self.get_empty_scanner_field_file)
         self.ui.pushButton_7.clicked.connect(self.get_irrad_film_file)
         self.ui.pushButton.clicked.connect(self.get_empty_field_file)
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
-        self.ui.pushButton_2.clicked.connect(SaveLoadData.create_json)
-        #self.ui.pushButton_3.clicked.connect(SaveLoadData.load_json)
-        self.ui.pushButton_3.clicked.connect(SaveLoadData.load_mongo)
+        self.ui.pushButton_9.clicked.connect(SaveLoadData.load_json)
 
     def get_irrad_film_file(self):
         """
@@ -451,16 +520,6 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
             self.ui.lineEdit_3.setDisabled(True)
 
-    def get_empty_scanner_field_file(self):
-        """
-        Find and paste the empty scanner file in tiff format
-        """
-        self.ui.lineEdit_2.setText(self.search_file('*.tif'))
-
-        if len(self.ui.lineEdit_2.text()) != 0:
-            DosesAndPaths.empty_scanner_field_file = self.ui.lineEdit_2.text()
-            self.ui.lineEdit_2.setDisabled(True)
-
     def get_empty_field_file(self):
         """
         Find and paste the empty file in tiff format
@@ -471,13 +530,23 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.empty_field_file = self.ui.lineEdit.text()
             self.ui.lineEdit.setDisabled(True)
 
+    def get_dpi_value(self):
+        """
+        Set DPI value in variable
+        """
+        DosesAndPaths.basis_formatter = 25.4 / self.ui.spinBox.value()
+
     def insert_tiff_file(self):
         """
         Insert a picture of the film in the interface window
         """
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+
         self.image_map.clf()
         img = plt.imread(DosesAndPaths.irrad_film_file)
         ax = self.image_map.add_subplot(111)
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
         ax.imshow(img)
         self.image_canvas.draw()
 
@@ -508,24 +577,8 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.form = Form()
         self.form.create_widgets_second_open()
-        self.insert_data_in_fields()
+        self.form.insert_data_in_fields()
         self.form.show()
-
-    def insert_data_in_fields(self):
-        """
-        Fill in the dialog window with doses and paths when opening
-        """
-        widgets = [self.form.gridLayout_3.itemAt(i).widget() for i in range(self.form.gridLayout_3.count())]
-        lineedits = [i for i in widgets if isinstance(i, QLineEdit)]
-        spinboxes = [i for i in widgets if isinstance(i, QDoubleSpinBox)]
-
-        for path, dose, line, spin in zip(DosesAndPaths.paths, DosesAndPaths.doses, lineedits, spinboxes):
-            if isinstance(line, QLineEdit):
-                line.setText(path)
-            if isinstance(spin, QDoubleSpinBox):
-                spin.setValue((float(dose)))
-
-        self.form.spinBox.setValue(DosesAndPaths.sigma)
 
     def search_file(self, file_type):
         """
@@ -547,6 +600,8 @@ class CalcUI(QtWidgets.QMainWindow):
         Running the calculation in the thread
         """
         if self.check_fields():
+            self.get_dpi_value()
+
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                                DosesAndPaths.paths, DosesAndPaths.doses,
@@ -563,7 +618,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         if DosesAndPaths.empty_scanner_field_file is not None and DosesAndPaths.empty_field_file is not None \
                 and DosesAndPaths.irrad_film_file is not None and len(DosesAndPaths.paths) > 0 \
-                and len(DosesAndPaths.doses) > 0:
+                and len(DosesAndPaths.doses) > 0 and DosesAndPaths.basis_formatter > 0:
             return True
 
 
@@ -599,8 +654,14 @@ class SaveLoadData:
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
-            with open(filename, 'w') as outfile:
-                json.dump(data, outfile, ensure_ascii=False, indent=4)
+            try:
+                with open(filename, 'w') as outfile:
+                    json.dump(data, outfile, ensure_ascii=False, indent=4)
+            except OSError:
+                QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
+                                                      "Please re-save the file using the correct name without special "
+                                                      "characters",
+                                     QMessageBox.Ok)
 
     @staticmethod
     def load_json():
@@ -618,18 +679,6 @@ class SaveLoadData:
 
                 DosesAndPaths.sigma = data['sigma']
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
-
-                application.ui.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
-
-    @staticmethod
-    def load_mongo():
-        tg = {'ebtLotNo': '05062003', 'hoursAfterIrrad': 24, 'facilityIdentifier': 'Co-60 (MRRC)',
-              'dose': {'$lt': 40.0}}
-        DosesAndPaths.doses = []
-        DosesAndPaths.paths = []
-        for post in collectionTifProvider.find(tg).sort('dose'):
-            DosesAndPaths.doses.append(post['dose'])
-            DosesAndPaths.paths.append(post['originalTifPath'])
 
 
 app = QtWidgets.QApplication([])
