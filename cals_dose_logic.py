@@ -655,7 +655,7 @@ class SaveLoadData:
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
             try:
-                with open(filename, 'w') as outfile:
+                with open(filename, 'w', encoding='utf-8') as outfile:
                     json.dump(data, outfile, ensure_ascii=False, indent=4)
             except OSError:
                 QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
