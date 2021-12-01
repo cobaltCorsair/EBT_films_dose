@@ -34,7 +34,7 @@ class GraphicsPlotting:
         application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
         application.canvas_map.draw()
         im3 = ax.imshow(z, cmap="jet", vmin=0)
-        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 0)  # the resolution
         ax.xaxis.set_major_formatter(formatter)
         ax.yaxis.set_major_formatter(formatter)
         application.figure_map.colorbar(im3, ax=ax, orientation="vertical")
@@ -425,7 +425,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         :param slice_x: Set of values along the X-axis
         :param slice_y: Set of values along the Y-axis
         """
-        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 0)  # the resolution
 
         # x axis
         self.figure_map_x.clf()
@@ -433,7 +433,6 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_x.grid(True, linestyle="-.")
         ax_x.plot(slice_x)
         ax_x.xaxis.set_major_formatter(formatter)
-        ax_x.yaxis.set_major_formatter(formatter)
         ax_x.set_xlabel('mm')
         ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
@@ -445,7 +444,6 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_y.grid(True, linestyle="-.")
         ax_y.plot(slice_y)
         ax_y.xaxis.set_major_formatter(formatter)
-        ax_y.yaxis.set_major_formatter(formatter)
         ax_y.set_xlabel('mm')
         ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
@@ -540,7 +538,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Insert a picture of the film in the interface window
         """
-        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 3)  # the resolution
+        formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 0)  # the resolution
 
         self.image_map.clf()
         img = plt.imread(DosesAndPaths.irrad_film_file)
@@ -671,7 +669,7 @@ class SaveLoadData:
         data = application.search_file('*.json')
 
         if os.path.exists(data):
-            with open(data) as f:
+            with open(data, encoding='utf-8') as f:
                 data = json.load(f)
                 for p in data['calibrate_list']:
                     DosesAndPaths.doses = [float(i) for i in p.keys()]
