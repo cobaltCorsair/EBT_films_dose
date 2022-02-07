@@ -94,6 +94,30 @@ class Dose(QThread):
         """
         return (b / (od - a)) + c
 
+    @staticmethod
+    def fit_func_pol2(od, x2, x1, x0):
+        '''
+        Fit with x2*od**2+x1*od+x0
+        '''
+        func = np.poly1d([x2,x1,x0])
+        return func(od)
+
+    @staticmethod
+    def fit_func_pol3(od, x3, x2, x1, x0):
+        '''
+        Fit with x3*od**3+x2*od**2+x1*od+x0
+        '''
+        func = np.poly1d([x3, x2,x1,x0])
+        return func(od)
+
+    @staticmethod
+    def fit_func_pol5(od, x5, x4, x3, x2, x1, x0):
+        '''
+        Fit with x5*od**5+x4*od**4+x3*od**3+x2*od**2+x1*od+x0
+        '''
+        func = np.poly1d([x5,x4,x3,x2,x1,x0])
+        return func(od)
+
     def red_channel_calc(self):
         """
         Calculate value in red channel of blank field
