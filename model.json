@@ -1,0 +1,9 @@
+{
+    "calibrate_list": [
+        {
+            "dose1": "tif1",
+            "dose22": "tif2"
+        }
+    ],
+    "sigma": 1
+}
