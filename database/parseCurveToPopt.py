@@ -4,6 +4,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import numpy as np
 from scipy.optimize import curve_fit
+import dbProxy as dbProxy
 from scipy.interpolate import interp1d
 from scipy.interpolate import splrep, splev
 import matplotlib.pyplot as plt
@@ -53,3 +54,5 @@ plt.plot(np.linspace(0.0, 21.0, 1000), f2)
 
 
 plt.show()
+
+print(dbProxy.getZeroFilmData4ExactLotNo(collectionTifProvider, 'Co-60 (MRRC)', '05062003', 24))
