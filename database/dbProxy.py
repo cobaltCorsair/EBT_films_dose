@@ -49,3 +49,11 @@ def getData4CalibrationCurveWithDoseHighLimit(collection, facility='', ebtLotNo=
     for i in cs:
         ret[i['dose']] = i['log10meanMinusZeroFilm']
     return ret
+
+def getZeroFilmData4ExactLotNo(collection, facility='', ebtLotNo='', hoursAfterIrrad='', ):
+    '''
+    @type collection: pymongo.collection.Collection
+    '''
+    cs = collection.find_one({'facilityIdentifier': facility, 'ebtLotNo': ebtLotNo, 'hoursAfterIrrad': hoursAfterIrrad,
+                            'isZeroFilm': True})
+    return cs
