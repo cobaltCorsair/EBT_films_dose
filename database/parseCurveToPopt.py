@@ -41,6 +41,7 @@ for i in s:
 
 p_opt, p_cov = curve_fit(fit_func2, x, y)
 
+# функция для опциональной замены curve_fit
 f1 = interp1d(x, y)
 
 f2a = splrep(x, y, s=0)
