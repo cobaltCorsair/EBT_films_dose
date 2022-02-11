@@ -5,7 +5,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import numpy as np
 import matplotlib.pyplot as plt
-
+from scipy.interpolate import interp1d
 import sklearn
 print(sklearn.__version__)
 from sklearn.linear_model import Ridge
@@ -40,5 +40,8 @@ xPlot = np.linspace(0.0, 0.7, 100)
 xPlot = xPlot[:, np.newaxis]
 yPlot = model.predict(xPlot)
 plt.plot(xPlot, yPlot, label="B-spline")
+
+f1 = interp1d(x, y)
+plt.plot(np.linspace(0.03, 0.7, 100), f1(np.linspace(0.03, 0.7, 100)), label="interp1d")
 
 plt.show()
