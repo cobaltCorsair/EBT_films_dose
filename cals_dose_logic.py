@@ -18,6 +18,7 @@ from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
 from Values import Ui_Form as Values_form
+from DB_and_settings import Ui_Form as DB_form
 
 plt.switch_backend('agg')
 
@@ -507,6 +508,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.form = None
+        self.bd_win = None
         self.graphic_dialog = None
         self.thread = None
 
@@ -531,6 +533,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_8.clicked.connect(self.get_dialog_window)
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_9.clicked.connect(SaveLoadData.load_json)
+        self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
 
     def get_irrad_film_file(self):
         """
@@ -633,6 +636,14 @@ class CalcUI(QtWidgets.QMainWindow):
             self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
 
+    def get_db_and_setting_window(self):
+        """
+        Show dialog window with db and settings
+        """
+        self.bd_win = DatabaseAndSettings()
+        # TODO: нужны действия по обновлению полей, аналогичные get_dialog_window, после закрытия этого окна
+        self.bd_win.show()
+
     @staticmethod
     def check_fields():
         """
@@ -701,6 +712,17 @@ class SaveLoadData:
 
                 DosesAndPaths.sigma = data['sigma']
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
+
+
+class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
+    """Class contains a description of the settings window
+    for loading data from the database,
+    as well as the curve approximation settings"""
+
+    def __init__(self, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        self.setupUi(self)
+
 
 
 app = QtWidgets.QApplication([])
