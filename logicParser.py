@@ -39,12 +39,21 @@ def fitFuncPol5(od, a, b, c, d, e, f):
     return func(od)
 
 class LogicParser(object):
-    def __init__(self, ods, doses, odVariant=LogicODVariant.useWhiteOD, curveVariant=LogicCurveVariants.useInterp1d, **kwargs):
+    #def __init__(self, ods, doses, odVariant=LogicODVariant.useWhiteOD, curveVariant=LogicCurveVariants.useInterp1d, **kwargs):
+    def __init__(self, dbDict, odVariant=LogicODVariant.useWhiteOD, curveVariant=LogicCurveVariants.useInterp1d,
+                 **kwargs):
         self.__dict__['odVariant'] = odVariant
         self.__dict__['curveVariant'] = curveVariant
         if curveVariant == LogicCurveVariants.useCurveFit:
             self.__dict__['fitFunc'] = kwargs.get('curveFitVariant', LogicCurveFitsVariant.usePol5)
 
+
+        ods = []
+        doses = []
+        for item in dbDict:
+            od = self.preparePixValue(item['meanRedChannel'])
+            ods.append(od)
+            doses.append(item['dose'])
         self.calibOds = ods
         self.calibDoses = doses
         self._prepare()
@@ -62,27 +71,43 @@ class LogicParser(object):
                 self._popt, self._pcov = curve_fit(fitFuncPol5, self.calibOds, self.calibDoses)
         elif self.__dict__['curveVariant'] == LogicCurveVariants.useInterp1d:
             self.interp = interp1d(self.calibOds, self.calibDoses)
+            print(self.interp(self.calibOds))
         elif self.__dict__['curveVariant'] == LogicCurveVariants.useSplev:
             self.splrep = splrep(self.calibOds, self.calibDoses)
             #f2a = splrep(x, y, s=0)
             #f2 = splev(np.linspace(0.0, 21.0, 1000), f2a, der=0)
         pass
 
-    def preparePixValue(self, PV):
+    def preparePixValue(self, PV, medUnexp=41200.0):
         if self.__dict__['odVariant'] == LogicODVariant.useBlackOD:
             medBckg = 2392.0
-            medUnexp = 41087.0 # @todo: get
+            #medUnexp = 41087.0 # @todo: get
             return np.log10((medUnexp - medBckg) / (PV - medBckg))
         elif self.__dict__['odVariant'] == LogicODVariant.useWhiteOD:
             medWhite = 65525.0
-            medUnexp = 41202.0 # @todo: get
+            #print(PV, np.log10(medWhite / PV) - np.log10(medWhite / medUnexp))
+            #medUnexp = 41202.0 # @todo: get
             return np.log10(medWhite / PV) - np.log10(medWhite / medUnexp)
         elif self.__dict__['odVariant'] == LogicODVariant.useDummy:
             return np.log10(1./ PV)
 
-
     def evaluate(self, value):
         od = self.preparePixValue(value)
+        if self.__dict__['curveVariant'] == LogicCurveVariants.useCurveFit:
+            if self.__dict__['fitFunc'] == LogicCurveFitsVariant.useSerejaVariant:
+                return fitFuncSereja(od, *self._popt)
+            elif self.__dict__['fitFunc'] == LogicCurveFitsVariant.usePol3:
+                return fitFuncPol3(od, *self._popt)
+            elif self.__dict__['fitFunc'] == LogicCurveFitsVariant.usePol4:
+                return fitFuncPol4(od, *self._popt)
+            elif self.__dict__['fitFunc'] == LogicCurveFitsVariant.usePol5:
+                return fitFuncPol5(od, *self._popt)
+        elif self.__dict__['curveVariant'] == LogicCurveVariants.useInterp1d:
+            return self.interp(od)
+        elif self.__dict__['curveVariant'] == LogicCurveVariants.useSplev:
+            return splev(od, self.splrep, der=0)
+
+    def evaluateOD(self, od):
         if self.__dict__['curveVariant'] == LogicCurveVariants.useCurveFit:
             if self.__dict__['fitFunc'] == LogicCurveFitsVariant.useSerejaVariant:
                 return fitFuncSereja(od, *self._popt)
@@ -114,8 +139,19 @@ if __name__ == '__main__':
         doses.append(dose)
         ods.append(od)
 
-    obj1 = LogicParser(ods, doses, LogicODVariant.useWhiteOD, LogicCurveVariants.useInterp1d)
-    print(obj1.evaluate(0.4))
+    vd = dbProxy.getDict4ExactCurveWithDoseLimit(collectionTifProvider, 'Co-60 (MRRC)',
+                                                           '05062003', 24, 50.0)
 
-    obj2 = LogicParser(ods, doses, LogicODVariant.useWhiteOD, LogicCurveVariants.useCurveFit, fitFunc=LogicCurveFitsVariant.useSerejaVariant)
-    print(obj2.evaluate(0.4))
+    print(type(vd))
+    obj1 = LogicParser(vd, LogicODVariant.useWhiteOD, LogicCurveVariants.useInterp1d)
+    print(obj1.evaluateOD(0.4))
+    print(obj1.evaluate(29511))
+
+    obj2 = LogicParser(vd, LogicODVariant.useWhiteOD, LogicCurveVariants.useCurveFit, fitFunc=LogicCurveFitsVariant.useSerejaVariant)
+    print(obj2.evaluateOD(0.4))
+    print(obj2.evaluate(29511))
+
+    import matplotlib.pyplot as plt
+    plt.plot(np.linspace(0.01, 0.7, 100), obj1.evaluateOD(np.linspace(0.01, 0.7, 100)))
+    plt.plot(np.linspace(0.01, 0.7, 100), obj2.evaluateOD(np.linspace(0.01, 0.7, 100)))
+    plt.show()
