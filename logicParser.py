@@ -18,6 +18,7 @@ class LogicCurveVariants(enum.Enum):
     useScikit = 4
 
 class LogicCurveFitsVariant(enum.Enum):
+    # only for useCurveFit from LogicCurveVariants
     useSerejaVariant = 1
     usePol3 = 3
     usePol4 = 4

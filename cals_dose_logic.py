@@ -21,6 +21,7 @@ from Values import Ui_Form as Values_form
 from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from database import dbProxy as db
+from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant
 
 plt.switch_backend('agg')
 
@@ -732,26 +733,29 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         # As soon as the value in the connect object changes, the set in the dependent list changes
         self.comboBox.currentIndexChanged.connect(self.set_secondary_values_in_comboboxes)
         self.comboBox_2.currentIndexChanged.connect(self.set_hours_values_in_comboboxes)
-        # self.pushButton.clicked.connect()
+        self.comboBox_5.currentIndexChanged.connect(self.select_curve_fits_variant)
+        self.pushButton.clicked.connect(self.load_the_latest_settings)
 
     @staticmethod
     def get_database_facility_values():
         """Load all facilities from the database"""
         facilities = db.getListOfFacilities(CalcUI.collection)
-        # print(facilities)
         return facilities
 
     def get_database_available_facilities_EVT4(self):
         """Load the available facilities from the database"""
         facilities = db.getListOfAvailableEBT4Facility(CalcUI.collection, self.comboBox.currentText())
-        # print(facilities)
         return facilities
 
     def set_values_in_start_setting(self):
-        """Filling the combo boxes on start (facilities)"""
+        """Filling the combo boxes on start (all)"""
         self.comboBox.addItems(DatabaseAndSettings.get_database_facility_values())
         self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
         self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
+
+        self.comboBox_4.addItems(self.get_od_variant)
+        self.comboBox_5.addItems(self.get_curve_variant)
+        self.comboBox_6.addItems(self.get_curve_fits_variant)
 
     def set_secondary_values_in_comboboxes(self):
         """Filling the second combo box (available facilities)"""
@@ -763,7 +767,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         hours = db.getListOfAvailableHoursAfterIrradiation4FacilityAndLotNo(CalcUI.collection,
                                                                                  self.comboBox.currentText(),
                                                                                  self.comboBox_2.currentText())
-        print([str(item) for item in hours])
         return [str(item) for item in hours]
 
     def set_hours_values_in_comboboxes(self):
@@ -771,8 +774,36 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox_3.clear()
         self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
 
+    def load_the_latest_settings(self):
+        # TODO: здесь будет загрузка последних настроек, сохраненных где-то в json
+        pass
 
+    @property
+    def get_od_variant(self):
+        """Select optical density variant"""
+        optical_density = [i.name for i in LogicODVariant]
+        return optical_density
 
+    @property
+    def get_curve_variant(self):
+        """Select curve variant"""
+        curves = [i.name for i in LogicCurveVariants]
+        return curves
+
+    @property
+    def get_curve_fits_variant(self):
+        """Select curve fit variant"""
+        curve_fits = [i.name for i in LogicCurveFitsVariant]
+        return curve_fits
+
+    def select_curve_fits_variant(self):
+        """Changes the function sets for different approximation types.
+        (Implemented so far only for one type of function.)"""
+        self.comboBox_6.clear()
+        if self.comboBox_5.currentText() == 'useCurveFit':
+            self.comboBox_6.addItems(self.get_curve_fits_variant)
+        else:
+            return []
 
 
 app = QtWidgets.QApplication([])
