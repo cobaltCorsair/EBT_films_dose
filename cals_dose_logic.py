@@ -19,6 +19,8 @@ from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
 from Values import Ui_Form as Values_form
 from DB_and_settings import Ui_Form as DB_form
+from database import db_connection
+from database import dbProxy as db
 
 plt.switch_backend('agg')
 
@@ -501,6 +503,8 @@ class CalcUI(QtWidgets.QMainWindow):
     """
     Main interface
     """
+    # connect to the database
+    collection = db_connection.Connect.start()
 
     def __init__(self, *args, **kwargs):
         super(CalcUI, self).__init__(*args, **kwargs)
@@ -722,6 +726,40 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
+
+        # filling the first combobox
+        self.set_values_in_start_setting()
+        # As soon as the value in the connect object changes, the set in the dependent list changes
+        self.comboBox.currentIndexChanged.connect(self.set_secondary_values_in_comboboxes)
+        # self.comboBox_2.currentIndexChanged.connect()
+        # self.pushButton.clicked.connect()
+
+    @staticmethod
+    def get_database_facility_values():
+        """Load all facilities from the database"""
+        facilities = db.getListOfFacilities(CalcUI.collection)
+        # print(facilities)
+        return facilities
+
+    def get_database_available_facilities_EVT4(self):
+        """Load the available facilities from the database"""
+        facilities = db.getListOfAvailableEBT4Facility(CalcUI.collection, self.comboBox.currentText())
+        # print(facilities)
+        return facilities
+
+    def set_values_in_start_setting(self):
+        """Filling the first combo box (facilities)"""
+        self.comboBox.addItems(DatabaseAndSettings.get_database_facility_values())
+
+    def set_secondary_values_in_comboboxes(self):
+        """Filling the second combo box (available facilities)"""
+        self.comboBox_2.clear()
+        self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
+
+
+
+
+
 
 
 
