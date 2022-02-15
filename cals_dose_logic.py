@@ -744,12 +744,14 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     def get_database_available_facilities_EVT4(self):
         """Load the available facilities from the database"""
         facilities = db.getListOfAvailableEBT4Facility(CalcUI.collection, self.comboBox.currentText())
-        print(facilities)
+        # print(facilities)
         return facilities
 
     def set_values_in_start_setting(self):
-        """Filling the first combo box (facilities)"""
+        """Filling the combo boxes on start (facilities)"""
         self.comboBox.addItems(DatabaseAndSettings.get_database_facility_values())
+        self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
+        self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
 
     def set_secondary_values_in_comboboxes(self):
         """Filling the second combo box (available facilities)"""
