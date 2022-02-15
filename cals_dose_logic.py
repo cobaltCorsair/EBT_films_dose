@@ -731,7 +731,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.set_values_in_start_setting()
         # As soon as the value in the connect object changes, the set in the dependent list changes
         self.comboBox.currentIndexChanged.connect(self.set_secondary_values_in_comboboxes)
-        # self.comboBox_2.currentIndexChanged.connect()
+        self.comboBox_2.currentIndexChanged.connect(self.set_hours_values_in_comboboxes)
         # self.pushButton.clicked.connect()
 
     @staticmethod
@@ -744,7 +744,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     def get_database_available_facilities_EVT4(self):
         """Load the available facilities from the database"""
         facilities = db.getListOfAvailableEBT4Facility(CalcUI.collection, self.comboBox.currentText())
-        # print(facilities)
+        print(facilities)
         return facilities
 
     def set_values_in_start_setting(self):
@@ -756,8 +756,18 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox_2.clear()
         self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
 
+    def get_database_hours_after_irradiation(self):
+        """Load the available facilities from the database"""
+        hours = db.getListOfAvailableHoursAfterIrradiation4FacilityAndLotNo(CalcUI.collection,
+                                                                                 self.comboBox.currentText(),
+                                                                                 self.comboBox_2.currentText())
+        print([str(item) for item in hours])
+        return [str(item) for item in hours]
 
-
+    def set_hours_values_in_comboboxes(self):
+        """Filling the third combo box (hours after irradiation)"""
+        self.comboBox_3.clear()
+        self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
 
 
 
