@@ -103,7 +103,7 @@ class Dose(QThread):
         '''
         Fit with x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x2,x1,x0])
+        func = np.poly1d([x2, x1, x0])
         return func(od)
 
     @staticmethod
@@ -111,7 +111,7 @@ class Dose(QThread):
         '''
         Fit with x3*od**3+x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x3, x2,x1,x0])
+        func = np.poly1d([x3, x2, x1, x0])
         return func(od)
 
     @staticmethod
@@ -119,7 +119,7 @@ class Dose(QThread):
         '''
         Fit with x5*od**5+x4*od**4+x3*od**3+x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x5,x4,x3,x2,x1,x0])
+        func = np.poly1d([x5, x4, x3, x2, x1, x0])
         return func(od)
 
     def red_channel_calc(self):
@@ -368,9 +368,12 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         self.value_win = ValuesWindow()
         if len(DosesAndPaths.calculation_doses) > 0:
-            self.value_win.plainTextEdit.appendPlainText(('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(
+                ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
+                '\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + (
+                '\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
         self.value_win.show()
 
 
@@ -697,8 +700,8 @@ class SaveLoadData:
                     json.dump(data, outfile, ensure_ascii=False, indent=4)
             except OSError:
                 QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
-                                                      "Please re-save the file using the correct name without special "
-                                                      "characters",
+                                                     "Please re-save the file using the correct name without special "
+                                                     "characters",
                                      QMessageBox.Ok)
 
     @staticmethod
@@ -735,6 +738,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox_2.currentIndexChanged.connect(self.set_hours_values_in_comboboxes)
         self.comboBox_5.currentIndexChanged.connect(self.select_curve_fits_variant)
         self.pushButton.clicked.connect(self.load_the_latest_settings)
+        self.pushButton_4.clicked.connect(self.get_approve)
 
     @staticmethod
     def get_database_facility_values():
@@ -765,8 +769,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     def get_database_hours_after_irradiation(self):
         """Load the available facilities from the database"""
         hours = db.getListOfAvailableHoursAfterIrradiation4FacilityAndLotNo(CalcUI.collection,
-                                                                                 self.comboBox.currentText(),
-                                                                                 self.comboBox_2.currentText())
+                                                                            self.comboBox.currentText(),
+                                                                            self.comboBox_2.currentText())
         return [str(item) for item in hours]
 
     def set_hours_values_in_comboboxes(self):
@@ -804,6 +808,28 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
             self.comboBox_6.addItems(self.get_curve_fits_variant)
         else:
             return []
+
+    def get_approve(self):
+        calibration_curve = db.getData4CalibrationCurve(CalcUI.collection, self.comboBox.currentText(),
+                                                        self.comboBox_2.currentText(), self.comboBox_3.currentText())
+
+        curve_with_dose_high_limit = db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection,
+                                                                                  self.comboBox.currentText(),
+                                                                                  self.comboBox_2.currentText(),
+                                                                                  self.comboBox_3.currentText(),
+                                                                                  self.doubleSpinBox.value())
+
+        exact_curve_with_dose_limit = db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
+                                                                         self.comboBox_2.currentText(),
+                                                                         self.comboBox_3.currentText(),
+                                                                         self.doubleSpinBox.value())
+
+        zero_film_data_exact_lot_no = db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
+                                                                    self.comboBox_2.currentText(),
+                                                                    self.comboBox_3.currentText())
+        print(zero_film_data_exact_lot_no)
+
+
 
 
 app = QtWidgets.QApplication([])
