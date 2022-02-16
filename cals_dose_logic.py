@@ -19,6 +19,9 @@ from Axes import Ui_Form as Axes_form
 from Curve import Ui_Form as Curve_form
 from Values import Ui_Form as Values_form
 from DB_and_settings import Ui_Form as DB_form
+from database import db_connection
+from database import dbProxy as db
+from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant
 
 plt.switch_backend('agg')
 
@@ -100,7 +103,7 @@ class Dose(QThread):
         '''
         Fit with x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x2,x1,x0])
+        func = np.poly1d([x2, x1, x0])
         return func(od)
 
     @staticmethod
@@ -108,7 +111,7 @@ class Dose(QThread):
         '''
         Fit with x3*od**3+x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x3, x2,x1,x0])
+        func = np.poly1d([x3, x2, x1, x0])
         return func(od)
 
     @staticmethod
@@ -116,7 +119,7 @@ class Dose(QThread):
         '''
         Fit with x5*od**5+x4*od**4+x3*od**3+x2*od**2+x1*od+x0
         '''
-        func = np.poly1d([x5,x4,x3,x2,x1,x0])
+        func = np.poly1d([x5, x4, x3, x2, x1, x0])
         return func(od)
 
     def red_channel_calc(self):
@@ -365,9 +368,12 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         self.value_win = ValuesWindow()
         if len(DosesAndPaths.calculation_doses) > 0:
-            self.value_win.plainTextEdit.appendPlainText(('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(
+                ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
+                '\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.calculation_doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + (
+                '\n'.join(map(str, [round(x, 4) for x in DosesAndPaths.p_opt]))).replace('.', ',')))
         self.value_win.show()
 
 
@@ -501,6 +507,8 @@ class CalcUI(QtWidgets.QMainWindow):
     """
     Main interface
     """
+    # connect to the database
+    collection = db_connection.Connect.start()
 
     def __init__(self, *args, **kwargs):
         super(CalcUI, self).__init__(*args, **kwargs)
@@ -692,8 +700,8 @@ class SaveLoadData:
                     json.dump(data, outfile, ensure_ascii=False, indent=4)
             except OSError:
                 QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
-                                                      "Please re-save the file using the correct name without special "
-                                                      "characters",
+                                                     "Please re-save the file using the correct name without special "
+                                                     "characters",
                                      QMessageBox.Ok)
 
     @staticmethod
@@ -722,6 +730,105 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
+
+        # filling the first combobox
+        self.set_values_in_start_setting()
+        # As soon as the value in the connect object changes, the set in the dependent list changes
+        self.comboBox.currentIndexChanged.connect(self.set_secondary_values_in_comboboxes)
+        self.comboBox_2.currentIndexChanged.connect(self.set_hours_values_in_comboboxes)
+        self.comboBox_5.currentIndexChanged.connect(self.select_curve_fits_variant)
+        self.pushButton.clicked.connect(self.load_the_latest_settings)
+        self.pushButton_4.clicked.connect(self.get_approve)
+
+    @staticmethod
+    def get_database_facility_values():
+        """Load all facilities from the database"""
+        facilities = db.getListOfFacilities(CalcUI.collection)
+        return facilities
+
+    def get_database_available_facilities_EVT4(self):
+        """Load the available facilities from the database"""
+        facilities = db.getListOfAvailableEBT4Facility(CalcUI.collection, self.comboBox.currentText())
+        return facilities
+
+    def set_values_in_start_setting(self):
+        """Filling the combo boxes on start (all)"""
+        self.comboBox.addItems(DatabaseAndSettings.get_database_facility_values())
+        self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
+        self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
+
+        self.comboBox_4.addItems(self.get_od_variant)
+        self.comboBox_5.addItems(self.get_curve_variant)
+        self.comboBox_6.addItems(self.get_curve_fits_variant)
+
+    def set_secondary_values_in_comboboxes(self):
+        """Filling the second combo box (available facilities)"""
+        self.comboBox_2.clear()
+        self.comboBox_2.addItems(self.get_database_available_facilities_EVT4())
+
+    def get_database_hours_after_irradiation(self):
+        """Load the available facilities from the database"""
+        hours = db.getListOfAvailableHoursAfterIrradiation4FacilityAndLotNo(CalcUI.collection,
+                                                                            self.comboBox.currentText(),
+                                                                            self.comboBox_2.currentText())
+        return [str(item) for item in hours]
+
+    def set_hours_values_in_comboboxes(self):
+        """Filling the third combo box (hours after irradiation)"""
+        self.comboBox_3.clear()
+        self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
+
+    def load_the_latest_settings(self):
+        # TODO: здесь будет загрузка последних настроек, сохраненных где-то в json
+        pass
+
+    @property
+    def get_od_variant(self):
+        """Select optical density variant"""
+        optical_density = [i.name for i in LogicODVariant]
+        return optical_density
+
+    @property
+    def get_curve_variant(self):
+        """Select curve variant"""
+        curves = [i.name for i in LogicCurveVariants]
+        return curves
+
+    @property
+    def get_curve_fits_variant(self):
+        """Select curve fit variant"""
+        curve_fits = [i.name for i in LogicCurveFitsVariant]
+        return curve_fits
+
+    def select_curve_fits_variant(self):
+        """Changes the function sets for different approximation types.
+        (Implemented so far only for one type of function.)"""
+        self.comboBox_6.clear()
+        if self.comboBox_5.currentText() == 'useCurveFit':
+            self.comboBox_6.addItems(self.get_curve_fits_variant)
+        else:
+            return []
+
+    def get_approve(self):
+        calibration_curve = db.getData4CalibrationCurve(CalcUI.collection, self.comboBox.currentText(),
+                                                        self.comboBox_2.currentText(), self.comboBox_3.currentText())
+
+        curve_with_dose_high_limit = db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection,
+                                                                                  self.comboBox.currentText(),
+                                                                                  self.comboBox_2.currentText(),
+                                                                                  self.comboBox_3.currentText(),
+                                                                                  self.doubleSpinBox.value())
+
+        exact_curve_with_dose_limit = db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
+                                                                         self.comboBox_2.currentText(),
+                                                                         self.comboBox_3.currentText(),
+                                                                         self.doubleSpinBox.value())
+
+        zero_film_data_exact_lot_no = db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
+                                                                    self.comboBox_2.currentText(),
+                                                                    self.comboBox_3.currentText())
+        print(zero_film_data_exact_lot_no)
+
 
 
 
