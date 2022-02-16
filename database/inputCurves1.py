@@ -22,6 +22,7 @@ def getCharacteristrics(tifFile):
         'medianRedChannel': median,
         'stdRedChannel': std,
         'log10mean': np.log10(mean),
+        'log10ReciprocalMean': np.log10(1./mean),
     }
     return ret
 
