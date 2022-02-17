@@ -67,8 +67,8 @@ class GraphicsPlotting:
 
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        # ax.errorbar(ods, doses, fmt='ro', label="Data points", markersize=6, capsize=5)
-        ax.plot(doses, dose_object.evaluateOD(ods), label="Fit function", color="black", linestyle="-.")
+        ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Fit function", color="black")
+        ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)))
         ax.grid(True, linestyle="-.")
         ax.legend(loc="best")
         ax.set_ylabel('Absorbed dose, Gy')
@@ -435,11 +435,10 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         """
         Draw dose curve from db data
         """
-        # try:
-        GraphicsPlotting.draw_curve_from_db(doses, ods, evaluate_od, self.figure_graph, self.canvas_graph)
-
-        # except (ValueError, TypeError):
-        #     print('Incorrect parameters')
+        try:
+            GraphicsPlotting.draw_curve_from_db(doses, ods, evaluate_od, self.figure_graph, self.canvas_graph)
+        except (ValueError, TypeError):
+            print('Incorrect parameters')
 
     def closeEvent(self, event):
         """
@@ -876,16 +875,17 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         # print(test.evaluateOD(0.4))
         self.doses = []
         self.ods = []
-        for dose, od in enumerate(curve_with_dose_high_limit):
+
+        for dose in curve_with_dose_high_limit:
             self.doses.append(dose)
-            self.ods.append(od)
+            self.ods.append(curve_with_dose_high_limit[dose])
+
+        print(self.doses)
+        print(self.ods)
 
         self.dose_curve_object = test
 
     def draw_curve_from_db_data(self):
-        print(self.doses)
-        print(self.ods)
-
         self.curve_win = CurveWindow()
         self.curve_win.get_curve_from_db_data(self.doses, self.ods, self.dose_curve_object)
         self.curve_win.setMinimumSize(640, 480)
