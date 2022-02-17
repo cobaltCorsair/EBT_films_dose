@@ -68,7 +68,7 @@ class GraphicsPlotting:
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
         # ax.errorbar(ods, doses, fmt='ro', label="Data points", markersize=6, capsize=5)
-        ax.plot(ods, doses, label="Fit function", color="black", linestyle="-.")
+        ax.plot(doses, dose_object.evaluateOD(ods), label="Fit function", color="black", linestyle="-.")
         ax.grid(True, linestyle="-.")
         ax.legend(loc="best")
         ax.set_ylabel('Absorbed dose, Gy')
