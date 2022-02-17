@@ -46,6 +46,29 @@ class MyTestCase(unittest.TestCase):
         plt.imshow(od1d.reshape(reds.shape), cmap=plt.cm.jet)
         plt.show()
 
+    def test_build2d_zDose(self):
+        #fl = r'V:\!Установки\EBT3\Без верификация фантом головы\P_bv2_150dpi127.tif'
+        fl = r'V:\!Установки\EBT3\Калибровка от 05.09.2021 Со-60\Lot 05062003\24 часа после облучения\G_2p5_150dpi_Lot2003.tif'
+        im = tifffile.imread(fl)
+        reds = im[0:im.shape[0], 0:im.shape[1], 0]
+        reds1d = reds.flatten()
+        print(reds)
+
+        # vl = dbProxy.getData4CalibrationCurveWithDoseHighLimit(self.collectionTifProvider, 'Co-60 (MRRC)',
+        #                                                        '05062003', 24, 50.0)
+        vd = dbProxy.getDict4ExactCurveWithDoseLimit(self.collectionTifProvider, 'Co-60 (MRRC)',
+                                                     '05062003', 24, 50.0)
+
+        obj1 = logicParser.LogicParser(vd, logicParser.LogicODVariant.useWhiteOD, logicParser.LogicCurveVariants.useSplev)
+        od1d = obj1.preparePixValue(reds1d)
+        print(od1d)
+        dose1d = obj1.evaluateOD(od1d)
+        print(dose1d)
+        import matplotlib.pyplot as plt
+        #im2 = plt.imread(fl)
+        plt.imshow(dose1d.reshape(reds.shape), cmap=plt.cm.jet)
+        plt.show()
+
     def setUp(self) -> None:
         self.client = MongoClient('mongodb://10.1.30.32:27017/')
         self.db = self.client['EBT_films_dose']
