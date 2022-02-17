@@ -755,8 +755,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.setupUi(self)
 
         self.dose_curve_object = None
-        self.doses = []
-        self.ods = []
+        self.doses = None
+        self.ods = None
 
         self.curve_win = None
         # filling the first combobox
@@ -874,7 +874,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         # print(test)
         # print(test.evaluate(29511))
         # print(test.evaluateOD(0.4))
-
+        self.doses = []
+        self.ods = []
         for dose, od in enumerate(curve_with_dose_high_limit):
             self.doses.append(dose)
             self.ods.append(od)
