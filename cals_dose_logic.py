@@ -62,6 +62,19 @@ class GraphicsPlotting:
         ax.set_ylim(0, np.max(setting_doses) + 0.5)
         canvas_graph.draw()
 
+    @staticmethod
+    def draw_curve_from_db(doses, ods, dose_object, figure_graph, canvas_graph):
+
+        figure_graph.clf()
+        ax = figure_graph.add_subplot(111)
+        # ax.errorbar(ods, doses, fmt='ro', label="Data points", markersize=6, capsize=5)
+        ax.plot(ods, doses, label="Fit function", color="black", linestyle="-.")
+        ax.grid(True, linestyle="-.")
+        ax.legend(loc="best")
+        ax.set_ylabel('Absorbed dose, Gy')
+        ax.set_xlabel('Relative optical density')
+        canvas_graph.draw()
+
 
 class Dose(QThread):
     """
@@ -418,16 +431,15 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
-    def get_curve_from_db_data(self, fit_func, calculation_doses, doses, p_opt, sigma):
+    def get_curve_from_db_data(self, doses, ods, evaluate_od):
         """
         Draw dose curve from db data
         """
-        try:
-            GraphicsPlotting.draw_curve(fit_func, calculation_doses, doses,
-                                        p_opt, self.figure_graph, self.canvas_graph, sigma)
+        # try:
+        GraphicsPlotting.draw_curve_from_db(doses, ods, evaluate_od, self.figure_graph, self.canvas_graph)
 
-        except (ValueError, TypeError):
-            print('Incorrect parameters')
+        # except (ValueError, TypeError):
+        #     print('Incorrect parameters')
 
     def closeEvent(self, event):
         """
@@ -743,6 +755,10 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.setupUi(self)
 
         self.dose_curve_object = None
+        self.doses = []
+        self.ods = []
+
+        self.curve_win = None
         # filling the first combobox
         self.set_values_in_start_setting()
         # As soon as the value in the connect object changes, the set in the dependent list changes
@@ -752,8 +768,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton.clicked.connect(self.load_the_latest_settings)
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
-
-
 
     @staticmethod
     def get_database_facility_values():
@@ -857,20 +871,24 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
             test = LogicParser(exact_curve_with_dose_limit, LogicODVariant.__dict__[self.comboBox_4.currentText()],
                                LogicCurveVariants.__dict__[self.comboBox_5.currentText()])
 
-        print(test)
-        print(test.evaluate(29511))
-        print(test.evaluateOD(0.4))
+        # print(test)
+        # print(test.evaluate(29511))
+        # print(test.evaluateOD(0.4))
+
+        for dose, od in enumerate(curve_with_dose_high_limit):
+            self.doses.append(dose)
+            self.ods.append(od)
 
         self.dose_curve_object = test
 
     def draw_curve_from_db_data(self):
-        # This method accepts required arguments:
-        # fit_func
-        # calculation_doses
-        # doses
-        # p_opt
-        # sigma
-        CurveWindow.get_curve_from_db_data()
+        print(self.doses)
+        print(self.ods)
+
+        self.curve_win = CurveWindow()
+        self.curve_win.get_curve_from_db_data(self.doses, self.ods, self.dose_curve_object)
+        self.curve_win.setMinimumSize(640, 480)
+        self.curve_win.show()
 
 
 app = QtWidgets.QApplication([])
