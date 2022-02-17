@@ -742,6 +742,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setupUi(self)
 
+        self.dose_curve_object = None
         # filling the first combobox
         self.set_values_in_start_setting()
         # As soon as the value in the connect object changes, the set in the dependent list changes
@@ -752,7 +753,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
 
-        self.dose_curve_object = None
+
 
     @staticmethod
     def get_database_facility_values():
