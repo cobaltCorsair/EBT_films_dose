@@ -21,7 +21,7 @@ from Values import Ui_Form as Values_form
 from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from database import dbProxy as db
-from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant
+from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant, LogicParser
 
 plt.switch_backend('agg')
 
@@ -418,6 +418,17 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
+    def get_curve_from_db_data(self, fit_func, calculation_doses, doses, p_opt, sigma):
+        """
+        Draw dose curve from db data
+        """
+        try:
+            GraphicsPlotting.draw_curve(fit_func, calculation_doses, doses,
+                                        p_opt, self.figure_graph, self.canvas_graph, sigma)
+
+        except (ValueError, TypeError):
+            print('Incorrect parameters')
+
     def closeEvent(self, event):
         """
         Clear figure
@@ -739,6 +750,9 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox_5.currentIndexChanged.connect(self.select_curve_fits_variant)
         self.pushButton.clicked.connect(self.load_the_latest_settings)
         self.pushButton_4.clicked.connect(self.get_approve)
+        self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
+
+        self.dose_curve_object = None
 
     @staticmethod
     def get_database_facility_values():
@@ -810,26 +824,52 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
             return []
 
     def get_approve(self):
-        calibration_curve = db.getData4CalibrationCurve(CalcUI.collection, self.comboBox.currentText(),
-                                                        self.comboBox_2.currentText(), self.comboBox_3.currentText())
+        calibration_curve = db.getData4CalibrationCurve(CalcUI.collection,
+                                                        self.comboBox.currentText(),
+                                                        self.comboBox_2.currentText(),
+                                                        int(self.comboBox_3.currentText()))
+
+        zero_film_data_exact_lot_no = db.getZeroFilmData4ExactLotNo(CalcUI.collection,
+                                                                    self.comboBox.currentText(),
+                                                                    self.comboBox_2.currentText(),
+                                                                    int(self.comboBox_3.currentText()))
 
         curve_with_dose_high_limit = db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection,
                                                                                   self.comboBox.currentText(),
                                                                                   self.comboBox_2.currentText(),
-                                                                                  self.comboBox_3.currentText(),
+                                                                                  int(self.comboBox_3.currentText()),
                                                                                   self.doubleSpinBox.value())
 
-        exact_curve_with_dose_limit = db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
+        exact_curve_with_dose_limit = db.getDict4ExactCurveWithDoseLimit(CalcUI.collection,
+                                                                         self.comboBox.currentText(),
                                                                          self.comboBox_2.currentText(),
-                                                                         self.comboBox_3.currentText(),
+                                                                         int(self.comboBox_3.currentText()),
                                                                          self.doubleSpinBox.value())
 
-        zero_film_data_exact_lot_no = db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
-                                                                    self.comboBox_2.currentText(),
-                                                                    self.comboBox_3.currentText())
-        print(zero_film_data_exact_lot_no)
+        try:
+            # if contains last argument
+            test = LogicParser(exact_curve_with_dose_limit, LogicODVariant.__dict__[self.comboBox_4.currentText()],
+                               LogicCurveVariants.__dict__[self.comboBox_5.currentText()],
+                               fitFunc=LogicCurveFitsVariant.__dict__[self.comboBox_6.currentText()])
+        except KeyError:
+            # if not contains last argument
+            test = LogicParser(exact_curve_with_dose_limit, LogicODVariant.__dict__[self.comboBox_4.currentText()],
+                               LogicCurveVariants.__dict__[self.comboBox_5.currentText()])
 
+        print(test)
+        print(test.evaluate(29511))
+        print(test.evaluateOD(0.4))
 
+        self.dose_curve_object = test
+
+    def draw_curve_from_db_data(self):
+        # This method accepts required arguments:
+        # fit_func
+        # calculation_doses
+        # doses
+        # p_opt
+        # sigma
+        CurveWindow.get_curve_from_db_data()
 
 
 app = QtWidgets.QApplication([])
