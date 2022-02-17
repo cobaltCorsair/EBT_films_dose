@@ -64,7 +64,6 @@ class GraphicsPlotting:
 
     @staticmethod
     def draw_curve_from_db(doses, ods, dose_object, figure_graph, canvas_graph):
-
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
         ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Fit function", color="black")
@@ -837,55 +836,62 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         else:
             return []
 
+    def database_query_methods(self, method):
+        """
+        :param method: Type of method used
+        :return: query result in the database
+        """
+        if method == 'basic':
+            return db.getData4CalibrationCurve(CalcUI.collection, self.comboBox.currentText(),
+                                               self.comboBox_2.currentText(), int(self.comboBox_3.currentText()))
+        elif method == 'zero_film':
+            return db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
+                                                 self.comboBox_2.currentText(), int(self.comboBox_3.currentText()))
+        elif method == 'get_data':
+            return db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection, self.comboBox.currentText(),
+                                                                self.comboBox_2.currentText(),
+                                                                int(self.comboBox_3.currentText()),
+                                                                self.doubleSpinBox.value())
+        elif method == 'get_dict':
+            return db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
+                                                      self.comboBox_2.currentText(),
+                                                      int(self.comboBox_3.currentText()), self.doubleSpinBox.value())
+
     def get_approve(self):
-        calibration_curve = db.getData4CalibrationCurve(CalcUI.collection,
-                                                        self.comboBox.currentText(),
-                                                        self.comboBox_2.currentText(),
-                                                        int(self.comboBox_3.currentText()))
-
-        zero_film_data_exact_lot_no = db.getZeroFilmData4ExactLotNo(CalcUI.collection,
-                                                                    self.comboBox.currentText(),
-                                                                    self.comboBox_2.currentText(),
-                                                                    int(self.comboBox_3.currentText()))
-
-        curve_with_dose_high_limit = db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection,
-                                                                                  self.comboBox.currentText(),
-                                                                                  self.comboBox_2.currentText(),
-                                                                                  int(self.comboBox_3.currentText()),
-                                                                                  self.doubleSpinBox.value())
-
-        exact_curve_with_dose_limit = db.getDict4ExactCurveWithDoseLimit(CalcUI.collection,
-                                                                         self.comboBox.currentText(),
-                                                                         self.comboBox_2.currentText(),
-                                                                         int(self.comboBox_3.currentText()),
-                                                                         self.doubleSpinBox.value())
-
-        try:
-            # if contains last argument
-            test = LogicParser(exact_curve_with_dose_limit, LogicODVariant.__dict__[self.comboBox_4.currentText()],
-                               LogicCurveVariants.__dict__[self.comboBox_5.currentText()],
-                               fitFunc=LogicCurveFitsVariant.__dict__[self.comboBox_6.currentText()])
-        except KeyError:
+        """
+        Values when you press OK
+        :return:
+        """
+        if len(self.comboBox_6.currentText()) is 0:
             # if not contains last argument
-            test = LogicParser(exact_curve_with_dose_limit, LogicODVariant.__dict__[self.comboBox_4.currentText()],
-                               LogicCurveVariants.__dict__[self.comboBox_5.currentText()])
+            curve_object = LogicParser(self.database_query_methods('get_dict'),
+                                       LogicODVariant.__dict__[self.comboBox_4.currentText()],
+                                       LogicCurveVariants.__dict__[self.comboBox_5.currentText()])
+        else:
+            # if contains last argument
+            curve_object = LogicParser(self.database_query_methods('get_dict'),
+                                       LogicODVariant.__dict__[self.comboBox_4.currentText()],
+                                       LogicCurveVariants.__dict__[self.comboBox_5.currentText()],
+                                       fitFunc=LogicCurveFitsVariant.__dict__[self.comboBox_6.currentText()])
 
-        # print(test)
-        # print(test.evaluate(29511))
-        # print(test.evaluateOD(0.4))
+        self.dose_curve_object = curve_object
         self.doses = []
         self.ods = []
 
-        for dose in curve_with_dose_high_limit:
+        dose_ods_dict = self.database_query_methods('get_data')
+
+        for dose in dose_ods_dict:
             self.doses.append(dose)
-            self.ods.append(curve_with_dose_high_limit[dose])
+            self.ods.append(dose_ods_dict[dose])
 
-        print(self.doses)
-        print(self.ods)
-
-        self.dose_curve_object = test
+        # print(self.doses)
+        # print(self.ods)
 
     def draw_curve_from_db_data(self):
+        """
+        Drawing a curve
+        :return:
+        """
         self.curve_win = CurveWindow()
         self.curve_win.get_curve_from_db_data(self.doses, self.ods, self.dose_curve_object)
         self.curve_win.setMinimumSize(640, 480)
