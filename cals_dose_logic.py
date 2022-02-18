@@ -436,8 +436,10 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         """
         try:
             GraphicsPlotting.draw_curve_from_db(doses, ods, evaluate_od, self.figure_graph, self.canvas_graph)
-        except (ValueError, TypeError):
-            print('Incorrect parameters')
+        except Exception as e:
+            template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+            message = template.format(type(e).__name__, e.args)
+            print(message)
 
     def closeEvent(self, event):
         """
