@@ -13,6 +13,8 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+from sqlalchemy import true
+
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
@@ -66,8 +68,8 @@ class GraphicsPlotting:
     def draw_curve_from_db(doses, ods, dose_object, figure_graph, canvas_graph):
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Fit function", color="black")
-        ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)))
+        ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Data points", color="red")
+        ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)), label="Fit function", color="black")
         ax.grid(True, linestyle="-.")
         ax.legend(loc="best")
         ax.set_ylabel('Absorbed dose, Gy')
@@ -531,7 +533,14 @@ class CalcUI(QtWidgets.QMainWindow):
     Main interface
     """
     # connect to the database
-    collection = db_connection.Connect.start()
+    connect = False
+    try:
+        collection = db_connection.Connect.start()
+        connect = True
+    except Exception as e:
+        template = "An exception of type {0} occurred. Arguments:\n{1!r}"
+        message = template.format(type(e).__name__, e.args)
+        print(message)
 
     def __init__(self, *args, **kwargs):
         super(CalcUI, self).__init__(*args, **kwargs)
@@ -565,6 +574,10 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_9.clicked.connect(SaveLoadData.load_json)
         self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
+
+        self.ui.pushButton_2.setDisabled(True)
+        if CalcUI.connect:
+            self.ui.pushButton_2.setDisabled(False)
 
     def get_irrad_film_file(self):
         """
@@ -769,6 +782,9 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
 
+        self.pushButton_5.setDisabled(True)
+        self.pushButton_9.setDisabled(True)
+
     @staticmethod
     def get_database_facility_values():
         """Load all facilities from the database"""
@@ -886,6 +902,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
             self.doses.append(dose)
             self.ods.append(dose_ods_dict[dose])
 
+        self.pushButton_5.setDisabled(False)
+        self.pushButton_9.setDisabled(False)
         # print(self.doses)
         # print(self.ods)
 
@@ -898,6 +916,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.curve_win.get_curve_from_db_data(self.doses, self.ods, self.dose_curve_object)
         self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
+
+        self.pushButton_5.setDisabled(True)
 
 
 app = QtWidgets.QApplication([])
