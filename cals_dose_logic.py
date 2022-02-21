@@ -686,11 +686,16 @@ class CalcUI(QtWidgets.QMainWindow):
 
         # db mode
         if not CalcUI.HAND_SWITCH_MODE \
-                and DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None:
+                and DosesAndPaths.curve_object is not None \
+                and DosesAndPaths.irrad_film_file is not None and DosesAndPaths.empty_field_file is not None:
             self.get_dpi_value()
             DosesAndPaths.z = list()
-            DosesAndPaths.z = DosesAndPaths.curve_object.preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file),
-                                                                         )
+
+            print(DosesAndPaths.empty_field_file)
+
+            DosesAndPaths.z = DosesAndPaths.curve_object.\
+                preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file),
+                                LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file))
             GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
             self.insert_tiff_file()
             self.progress_bar_update(100)

@@ -64,7 +64,8 @@ class LogicParser(object):
         self.calibDoses = doses
         self._prepare()
 
-    def getMean4FilmByFilename(self, filename='', channel=0):
+    @staticmethod
+    def getMean4FilmByFilename(filename, channel=0):
         '''
         Функция, возвращает среднее (mean) значение по всем пикселям снимка
         @param filename: Путь к файлу
