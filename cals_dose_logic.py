@@ -13,7 +13,6 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from sqlalchemy import true
 
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
@@ -136,16 +135,20 @@ class Dose(QThread):
         func = np.poly1d([x5, x4, x3, x2, x1, x0])
         return func(od)
 
+    @staticmethod
+    def get_imarray(img):
+        im = tifimage.imread(img)
+        imarray = np.array(im, dtype=np.uint16)
+        imarray = (imarray[:, :, 0])
+        return imarray
+
     def red_channel_calc(self):
         """
         Calculate value in red channel of blank field
         :return: od_blank
         """
         blank_field_path = self.zero_dose
-        im = tifimage.imread(blank_field_path)
-        imarray = np.array(im, dtype=np.uint16)
-        imarray = (imarray[:, :, 0])
-        od_blank = np.mean(imarray)
+        od_blank = np.mean(Dose.get_imarray(blank_field_path))
         print("Blank field value: ", round(od_blank, 2))
 
         DosesAndPaths.red_channel_blank = od_blank
@@ -155,10 +158,10 @@ class Dose(QThread):
         """
         Image file processor
         """
-        im = tifimage.imread(path_to_film)
-        imarray = np.array(im, dtype=np.uint16)
-        imarray = (imarray[:, :, 0])
-        red_channel_current_tiff = np.mean(imarray)
+        # im = tifimage.imread(path_to_film)
+        # imarray = np.array(im, dtype=np.uint16)
+        # imarray = (imarray[:, :, 0])
+        red_channel_current_tiff = np.mean(Dose.get_imarray(path_to_film))
         od_current_dose = np.log10(DosesAndPaths.red_channel_blank / red_channel_current_tiff)
 
         return od_current_dose
@@ -195,15 +198,11 @@ class Dose(QThread):
         try:
             user_img = self.irradiation_film
             zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-            im = tifimage.imread(user_img)
-            imarray = np.array(im, dtype=np.uint16)
-            imarray = (imarray[:, :, 0])
-
-            print("\nShape of scanned film:", np.shape(imarray))
+            print("\nShape of scanned film:", np.shape(Dose.get_imarray(user_img)))
             progress = 0
             counter = 0
             print("\nPrepearing your file:\n")
-            for i in np.nditer(imarray):
+            for i in np.nditer(Dose.get_imarray(user_img)):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
                 x = self.fit_func(x, *DosesAndPaths.p_opt)
@@ -211,11 +210,11 @@ class Dose(QThread):
 
                 counter = counter + 1
                 if counter % 10000 == 0:
-                    print("Iteration ", counter, "/", np.size(imarray))
+                    print("Iteration ", counter, "/", np.size(Dose.get_imarray(user_img)))
                     progress += 1
                     self.progressChanged.emit(round(progress))
 
-            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(imarray))
+            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(Dose.get_imarray(user_img)))
             print("\nDose calculation ended!!!\n")
             self.progressChanged.emit(100)
             GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
@@ -238,6 +237,7 @@ class DosesAndPaths:
     sigma = 0
     z = list()
     basis_formatter = 0.17
+    curve_object = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -331,6 +331,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         DosesAndPaths.calculation_doses.clear()
 
         self.get_enabled_curve_drawing()
+        CalcUI.HAND_SWITCH_MODE = True
 
     def get_enabled_curve_drawing(self):
         """
@@ -542,6 +543,8 @@ class CalcUI(QtWidgets.QMainWindow):
         message = template.format(type(e).__name__, e.args)
         print(message)
 
+    HAND_SWITCH_MODE = True
+
     def __init__(self, *args, **kwargs):
         super(CalcUI, self).__init__(*args, **kwargs)
 
@@ -668,7 +671,8 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Running the calculation in the thread
         """
-        if self.check_fields():
+        if self.check_fields() and CalcUI.HAND_SWITCH_MODE:
+            # manual mode
             self.get_dpi_value()
 
             DosesAndPaths.z = list()
@@ -679,6 +683,16 @@ class CalcUI(QtWidgets.QMainWindow):
             self.thread.start()
             self.thread.progressChanged.connect(self.progress_bar_update)
             self.insert_tiff_file()
+
+        # db mode
+        if not CalcUI.HAND_SWITCH_MODE \
+                and DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None:
+            self.get_dpi_value()
+            DosesAndPaths.z = list()
+            DosesAndPaths.z = DosesAndPaths.curve_object.preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file))
+            GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
+            self.insert_tiff_file()
+            self.progress_bar_update(100)
 
     def get_db_and_setting_window(self):
         """
@@ -893,6 +907,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                                        fitFunc=LogicCurveFitsVariant.__dict__[self.comboBox_6.currentText()])
 
         self.dose_curve_object = curve_object
+        DosesAndPaths.curve_object = self.dose_curve_object
+
         self.doses = []
         self.ods = []
 
@@ -918,6 +934,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.curve_win.show()
 
         self.pushButton_5.setDisabled(True)
+        CalcUI.HAND_SWITCH_MODE = False
 
 
 app = QtWidgets.QApplication([])
