@@ -4,6 +4,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 from scipy.interpolate import splrep, splev
+import tifffile as tifimage
 
 class LogicODVariant(enum.Enum):
     useBlackOD = 1
@@ -58,6 +59,24 @@ class LogicParser(object):
         self.calibOds = ods
         self.calibDoses = doses
         self._prepare()
+
+    def getMean4FilmByFilename(self, filename='', channel=0):
+        '''
+        Функция, возвращает среднее (mean) значение по всем пикселям снимка
+        @param filename: Путь к файлу
+        @type filename: str
+        @param channel: Канал (0 - красный, рекомендуется)
+        @type channel: int
+        @return:
+        @rtype: float
+        '''
+        im = tifimage.imread(filename)
+        imarray = np.array(im, dtype=np.uint16)
+        imarray = (imarray[:, :, channel])  # red channel
+        mean = np.mean(imarray)
+        median = np.median(imarray)
+        std = np.std(imarray)
+        return mean
 
     def _prepare(self):
         # p_opt, p_cov = curve_fit(fit_func2, x, y)
