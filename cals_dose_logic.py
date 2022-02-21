@@ -438,7 +438,7 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         Draw dose curve from db data
         """
         try:
-            GraphicsPlotting.draw_curve_from_db(doses, ods, evaluate_od, self.figure_graph, self.canvas_graph)
+            GraphicsPlotting.draw_curve_from_db(doses[1:], ods[1:], evaluate_od, self.figure_graph, self.canvas_graph)
         except Exception as e:
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
@@ -689,7 +689,8 @@ class CalcUI(QtWidgets.QMainWindow):
                 and DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None:
             self.get_dpi_value()
             DosesAndPaths.z = list()
-            DosesAndPaths.z = DosesAndPaths.curve_object.preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file))
+            DosesAndPaths.z = DosesAndPaths.curve_object.preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file),
+                                                                         )
             GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
             self.insert_tiff_file()
             self.progress_bar_update(100)

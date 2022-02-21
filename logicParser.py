@@ -52,8 +52,12 @@ class LogicParser(object):
 
         ods = []
         doses = []
+        pixzero = 0
         for item in dbDict:
-            od = self.preparePixValue(item['meanRedChannel'])
+            if item['isZeroFilm']:
+                pixzero = item['meanRedChannel']
+                continue
+            od = self.preparePixValue(item['meanRedChannel'], pixzero)
             ods.append(od)
             doses.append(item['dose'])
         self.calibOds = ods
