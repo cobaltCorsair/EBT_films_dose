@@ -68,7 +68,8 @@ class GraphicsPlotting:
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
         ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Data points", color="red")
-        ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)), label="Fit function", color="black")
+        ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)),
+                label="Fit function", color="black")
         ax.grid(True, linestyle="-.")
         ax.legend(loc="best")
         ax.set_ylabel('Absorbed dose, Gy')
@@ -691,11 +692,9 @@ class CalcUI(QtWidgets.QMainWindow):
             self.get_dpi_value()
             DosesAndPaths.z = list()
 
-            print(DosesAndPaths.empty_field_file)
-
-            DosesAndPaths.z = DosesAndPaths.curve_object.\
-                preparePixValue(Dose.get_imarray(DosesAndPaths.irrad_film_file),
-                                LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file))
+            DosesAndPaths.z = DosesAndPaths.curve_object.evaluateOD(DosesAndPaths.curve_object.preparePixValue(
+                Dose.get_imarray(DosesAndPaths.irrad_film_file), LogicParser.getMean4FilmByFilename(
+                    DosesAndPaths.empty_field_file)))
             GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
             self.insert_tiff_file()
             self.progress_bar_update(100)
@@ -777,6 +776,20 @@ class SaveLoadData:
                 DosesAndPaths.sigma = data['sigma']
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
 
+    @staticmethod
+    def save_db_win_setting(facility, lot, hours, dose_limit, od, fit_func, fitting):
+        setting = {
+            'facility_name': facility,
+            'lot_number': lot,
+            'hours_after_irrad': hours,
+            'dose_limit': dose_limit,
+            'optical_density': od,
+            'fit_funtion': fit_func,
+            'curve_fitting': fitting
+        }
+
+        print(setting)
+
 
 class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     """Class contains a description of the settings window
@@ -792,6 +805,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.ods = None
 
         self.curve_win = None
+        self.value_win = None
         # filling the first combobox
         self.set_values_in_start_setting()
         # As soon as the value in the connect object changes, the set in the dependent list changes
@@ -801,6 +815,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton.clicked.connect(self.load_the_latest_settings)
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
+        self.pushButton_9.clicked.connect(self.get_values)
+        self.pushButton_2.clicked.connect(self.save_values)
 
         self.pushButton_5.setDisabled(True)
         self.pushButton_9.setDisabled(True)
@@ -845,6 +861,10 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
     def load_the_latest_settings(self):
         # TODO: здесь будет загрузка последних настроек, сохраненных где-то в json
+        pass
+
+    def reload_old_setting(self):
+        # TODO: Реализация запоминаия настроек при выходе из окна
         pass
 
     @property
@@ -926,8 +946,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         self.pushButton_5.setDisabled(False)
         self.pushButton_9.setDisabled(False)
-        # print(self.doses)
-        # print(self.ods)
 
     def draw_curve_from_db_data(self):
         """
@@ -941,6 +959,30 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         self.pushButton_5.setDisabled(True)
         CalcUI.HAND_SWITCH_MODE = False
+
+    def get_values(self):
+        """
+        Get the values of doses, optical density in dialog window
+        """
+        self.value_win = ValuesWindow()
+
+        if self.dose_curve_object is not None:
+            self.value_win.plainTextEdit.appendPlainText(
+                ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in self.doses]))).replace('.', ',')))
+            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
+                '\n'.join(map(str, [round(x, 4) for x in self.ods]))).replace('.', ',')))
+        self.value_win.show()
+
+    def save_values(self):
+        """
+        Save settings from fields at json-liked format
+        :return:
+        """
+        SaveLoadData.save_db_win_setting(self.comboBox.currentText(), self.comboBox_2.currentText(),
+                                         self.comboBox_3.currentText(), self.doubleSpinBox.value(),
+                                         self.comboBox_4.currentText(), self.comboBox_5.currentText(),
+                                         self.comboBox_6.currentText())
+
 
 
 app = QtWidgets.QApplication([])
