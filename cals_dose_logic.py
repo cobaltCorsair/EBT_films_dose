@@ -691,10 +691,11 @@ class CalcUI(QtWidgets.QMainWindow):
                 and DosesAndPaths.irrad_film_file is not None and DosesAndPaths.empty_field_file is not None:
             self.get_dpi_value()
             DosesAndPaths.z = list()
-
-            DosesAndPaths.z = DosesAndPaths.curve_object.evaluateOD(DosesAndPaths.curve_object.preparePixValue(
-                Dose.get_imarray(DosesAndPaths.irrad_film_file), LogicParser.getMean4FilmByFilename(
-                    DosesAndPaths.empty_field_file)))
+            im_arr_first = Dose.get_imarray(DosesAndPaths.irrad_film_file)
+            im_arr_flatt = im_arr_first.flatten()
+            parsed_empty_file = LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file)
+            z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
+            DosesAndPaths.z = (DosesAndPaths.curve_object.evaluateOD(z_object)).reshape(im_arr_first.shape)
             GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
             self.insert_tiff_file()
             self.progress_bar_update(100)
@@ -722,6 +723,7 @@ class SaveLoadData:
     """
     Сlass for save and load json
     """
+    db_win_setting = None
 
     @staticmethod
     def create_json():
@@ -778,7 +780,7 @@ class SaveLoadData:
 
     @staticmethod
     def save_db_win_setting(facility, lot, hours, dose_limit, od, fit_func, fitting):
-        setting = {
+        SaveLoadData.db_win_setting = {
             'facility_name': facility,
             'lot_number': lot,
             'hours_after_irrad': hours,
@@ -788,13 +790,14 @@ class SaveLoadData:
             'curve_fitting': fitting
         }
 
-        print(setting)
-
 
 class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     """Class contains a description of the settings window
     for loading data from the database,
     as well as the curve approximation settings"""
+
+    closeDialog = pyqtSignal()
+    openDialog = pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -816,7 +819,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
         self.pushButton_9.clicked.connect(self.get_values)
-        self.pushButton_2.clicked.connect(self.save_values)
+        self.pushButton_4.clicked.connect(self.save_values)
 
         self.pushButton_5.setDisabled(True)
         self.pushButton_9.setDisabled(True)
@@ -864,8 +867,18 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         pass
 
     def reload_old_setting(self):
-        # TODO: Реализация запоминаия настроек при выходе из окна
-        pass
+        """
+        Restore the saved settings when reopen the window
+        :return:
+        """
+        if SaveLoadData.db_win_setting is not None:
+            self.comboBox.setCurrentText(SaveLoadData.db_win_setting['facility_name'])
+            self.comboBox_2.setCurrentText(SaveLoadData.db_win_setting['lot_number'])
+            self.comboBox_3.setCurrentText(SaveLoadData.db_win_setting['hours_after_irrad'])
+            self.doubleSpinBox.setValue(float(SaveLoadData.db_win_setting['dose_limit']))
+            self.comboBox_4.setCurrentText(SaveLoadData.db_win_setting['optical_density'])
+            self.comboBox_5.setCurrentText(SaveLoadData.db_win_setting['fit_funtion'])
+            self.comboBox_6.setCurrentText(SaveLoadData.db_win_setting['curve_fitting'])
 
     @property
     def get_od_variant(self):
@@ -982,6 +995,21 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                                          self.comboBox_3.currentText(), self.doubleSpinBox.value(),
                                          self.comboBox_4.currentText(), self.comboBox_5.currentText(),
                                          self.comboBox_6.currentText())
+
+    def closeEvent(self, event):
+        """
+        :param event: Window close
+        """
+        print(SaveLoadData.db_win_setting)
+        self.closeDialog.emit()
+
+    def showEvent(self, event):
+        """
+        :param event: Window show
+        """
+        self.reload_old_setting()
+        self.openDialog.emit()
+
 
 
 
