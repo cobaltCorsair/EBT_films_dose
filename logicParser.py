@@ -5,6 +5,10 @@ from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 from scipy.interpolate import splrep, splev
 import tifffile as tifimage
+import sklearn
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import SplineTransformer
+from sklearn.pipeline import make_pipeline
 
 class LogicODVariant(enum.Enum):
     useBlackOD = 1
@@ -101,6 +105,12 @@ class LogicParser(object):
             self.splrep = splrep(self.calibOds, self.calibDoses)
             #f2a = splrep(x, y, s=0)
             #f2 = splev(np.linspace(0.0, 21.0, 1000), f2a, der=0)
+        elif self.__dict__['curveVariant'] == LogicCurveVariants.useScikit:
+            x = np.array(self.calibOds)
+            x2 = x[:, np.newaxis]
+            y = np.array(self.calibDoses)
+            self.scikitmodel = make_pipeline(SplineTransformer(n_knots=4, degree=3), Ridge(alpha=1e-3))
+            self.scikitmodel.fit(x2, y)
         pass
 
     def preparePixValue(self, PV, medUnexp=41200.0):
@@ -146,6 +156,10 @@ class LogicParser(object):
             return self.interp(od)
         elif self.__dict__['curveVariant'] == LogicCurveVariants.useSplev:
             return splev(od, self.splrep, der=0)
+        elif self.__dict__['curveVariant'] == LogicCurveVariants.useScikit:
+            od2 = np.array(od)
+            od2 = od2[:, np.newaxis]
+            return self.scikitmodel.predict(od2)
         pass
 
 if __name__ == '__main__':
