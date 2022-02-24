@@ -239,6 +239,7 @@ class DosesAndPaths:
     z = list()
     basis_formatter = 0.17
     curve_object = None
+    zero_from_db = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -668,14 +669,25 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.ui.progressBar.setValue(data)
 
+    def first_film_from_calibration(self):
+        if self.ui.checkBox.isChecked() and CalcUI.HAND_SWITCH_MODE:
+            try:
+                print(CalcUI.HAND_SWITCH_MODE)
+                DosesAndPaths.empty_field_file = DosesAndPaths.paths[0]
+            except (TypeError, IndexError):
+                print('Need to confirm use of calibration')
+        elif self.ui.checkBox.isChecked() and not CalcUI.HAND_SWITCH_MODE:
+            DosesAndPaths.empty_field_file = DosesAndPaths.zero_from_db
+
     def start_calc(self):
         """
         Running the calculation in the thread
         """
+        self.first_film_from_calibration()
+
         if self.check_fields() and CalcUI.HAND_SWITCH_MODE:
             # manual mode
             self.get_dpi_value()
-
             DosesAndPaths.z = list()
             self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                                DosesAndPaths.paths, DosesAndPaths.doses,
@@ -693,7 +705,10 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.z = list()
             im_arr_first = Dose.get_imarray(DosesAndPaths.irrad_film_file)
             im_arr_flatt = im_arr_first.flatten()
-            parsed_empty_file = LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file)
+            if self.ui.checkBox.isChecked():
+                parsed_empty_file = DosesAndPaths.zero_from_db
+            else:
+                parsed_empty_file = LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file)
             z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
             DosesAndPaths.z = (DosesAndPaths.curve_object.evaluateOD(z_object)).reshape(im_arr_first.shape)
             GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
@@ -928,6 +943,18 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                                                       self.comboBox_2.currentText(),
                                                       int(self.comboBox_3.currentText()), self.doubleSpinBox.value())
 
+    def get_zero_film(self):
+        """
+        Get the first film from the calibration
+        :return:
+        """
+        zero_from_db = db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
+                                                  self.comboBox_2.currentText(),
+                                                  int(self.comboBox_3.currentText()))
+
+        DosesAndPaths.zero_from_db = zero_from_db['meanRedChannel']
+        print(DosesAndPaths.zero_from_db)
+
     def get_approve(self):
         """
         Values when you press OK
@@ -960,6 +987,10 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.pushButton_5.setDisabled(False)
         self.pushButton_9.setDisabled(False)
 
+        CalcUI.HAND_SWITCH_MODE = False
+        self.get_zero_film()
+
+
     def draw_curve_from_db_data(self):
         """
         Drawing a curve
@@ -971,7 +1002,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.curve_win.show()
 
         self.pushButton_5.setDisabled(True)
-        CalcUI.HAND_SWITCH_MODE = False
 
     def get_values(self):
         """

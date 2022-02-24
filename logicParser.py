@@ -9,7 +9,7 @@ import tifffile as tifimage
 class LogicODVariant(enum.Enum):
     useBlackOD = 1
     useWhiteOD = 2
-    useBlackAndWhite = 3
+    # useBlackAndWhite = 3
     useDummy = 99
 
 class LogicCurveVariants(enum.Enum):
