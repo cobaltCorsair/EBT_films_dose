@@ -38,7 +38,12 @@ class GraphicsPlotting:
         application.cursor = matplotlib.widgets.Cursor(ax, useblit=False, color='red', linewidth=1)
         application.canvas_map.mpl_connect('button_press_event', lambda event: application.onclick(event, ax))
         application.canvas_map.draw()
-        im3 = ax.imshow(z, cmap="jet", vmin=0)
+
+        if DosesAndPaths.vmax is not None and DosesAndPaths.vmin is not None:
+            im3 = ax.imshow(z, cmap="jet", vmin=DosesAndPaths.vmin, vmax=DosesAndPaths.vmax)
+        else:
+            im3 = ax.imshow(z, cmap="jet")
+
         formatter = lambda x, pos: round(x * DosesAndPaths.basis_formatter, 0)  # the resolution
         ax.xaxis.set_major_formatter(formatter)
         ax.yaxis.set_major_formatter(formatter)
@@ -159,9 +164,6 @@ class Dose(QThread):
         """
         Image file processor
         """
-        # im = tifimage.imread(path_to_film)
-        # imarray = np.array(im, dtype=np.uint16)
-        # imarray = (imarray[:, :, 0])
         red_channel_current_tiff = np.mean(Dose.get_imarray(path_to_film))
         od_current_dose = np.log10(DosesAndPaths.red_channel_blank / red_channel_current_tiff)
 
@@ -240,6 +242,8 @@ class DosesAndPaths:
     basis_formatter = 0.17
     curve_object = None
     zero_from_db = None
+    vmin = None
+    vmax = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -610,6 +614,21 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         DosesAndPaths.basis_formatter = 25.4 / self.ui.spinBox.value()
 
+    def get_vmin_vmax_values(self):
+        """
+        Set vmin/vmax value in z_map
+        """
+        # Reset the values to None at first
+        DosesAndPaths.vmin = None
+        DosesAndPaths.vmax = None
+
+        vmin = self.ui.doubleSpinBox.value()
+        vmax = self.ui.doubleSpinBox_2.value()
+
+        if self.ui.checkBox_2.isChecked():
+            DosesAndPaths.vmin = vmin
+            DosesAndPaths.vmax = vmax
+
     def insert_tiff_file(self):
         """
         Insert a picture of the film in the interface window
@@ -689,6 +708,7 @@ class CalcUI(QtWidgets.QMainWindow):
         Running the calculation in the thread
         """
         self.first_film_from_calibration()
+        self.get_vmin_vmax_values()
 
         if self.check_fields_manual_mode() and CalcUI.HAND_SWITCH_MODE:
             # manual mode
