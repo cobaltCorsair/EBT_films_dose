@@ -797,16 +797,17 @@ class SaveLoadData:
         if DosesAndPaths.empty_scanner_field_file is not None:
             data['empty_scanner_field_file'] = DosesAndPaths.empty_scanner_field_file
 
-        SaveLoadData.save_json(data)
+        SaveLoadData.save_json(data, 'calibrate_list')
 
     @staticmethod
-    def save_json(data):
+    def save_json(data, file_name):
         """
         Save json file
+        :param file_name: name of the file to be saved
         :param data: json object
         """
-        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate list and empty scanner field file',
-                                                  'calibrate_and_empty.json',
+        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list',
+                                                  file_name+'.json',
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
@@ -848,6 +849,20 @@ class SaveLoadData:
             'curve_fitting': fitting
         }
 
+    @staticmethod
+    def load_json_settings():
+        """
+        Load and parse json file
+        """
+        data = application.search_file('*.json')
+
+        if os.path.exists(data):
+            with open(data, encoding='utf-8') as f:
+                data = json.load(f)
+                SaveLoadData.save_db_win_setting(data['facility_name'], data['lot_number'], data['hours_after_irrad'],
+                                                 data['dose_limit'], data['optical_density'], data['fit_funtion'],
+                                                 data['curve_fitting'])
+
 
 class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
     """Class contains a description of the settings window
@@ -873,7 +888,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox.currentIndexChanged.connect(self.set_secondary_values_in_comboboxes)
         self.comboBox_2.currentIndexChanged.connect(self.set_hours_values_in_comboboxes)
         self.comboBox_5.currentIndexChanged.connect(self.select_curve_fits_variant)
-        self.pushButton.clicked.connect(self.load_the_latest_settings)
         self.pushButton_4.clicked.connect(self.get_approve)
         self.pushButton_5.clicked.connect(self.draw_curve_from_db_data)
         self.pushButton_9.clicked.connect(self.get_values)
@@ -881,10 +895,10 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         self.pushButton_5.setDisabled(True)
         self.pushButton_9.setDisabled(True)
-
-        # TODO: Locked until unrealized
-        self.pushButton.setDisabled(True)
         self.pushButton_2.setDisabled(True)
+
+        self.pushButton_2.clicked.connect(self.save_json_settings)
+        self.pushButton.clicked.connect(self.load_the_latest_settings)
 
     @staticmethod
     def get_database_facility_values():
@@ -925,8 +939,20 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.comboBox_3.addItems(self.get_database_hours_after_irradiation())
 
     def load_the_latest_settings(self):
-        # TODO: здесь будет загрузка последних настроек, сохраненных где-то в json
-        pass
+        """
+        Load the settings from a file
+        :return:
+        """
+        SaveLoadData.load_json_settings()
+        self.reload_old_setting()
+
+    def save_json_settings(self):
+        """
+        Save the settings to a file
+        :return:
+        """
+        if SaveLoadData.db_win_setting:
+            SaveLoadData.save_json(SaveLoadData.db_win_setting, 'bd_method_settings')
 
     def reload_old_setting(self):
         """
@@ -1032,6 +1058,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         self.pushButton_5.setDisabled(False)
         self.pushButton_9.setDisabled(False)
+        self.pushButton_2.setDisabled(False)
 
         CalcUI.HAND_SWITCH_MODE = False
         self.get_zero_film()
