@@ -491,13 +491,15 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         Limits the dose if a checkbox was checked
         :param slice: axis segment
         :param ax: сanvas
-        :return:
+        :return: slice
         """
         if DosesAndPaths.vmax is not None and DosesAndPaths.vmin is not None:
             slice_clipped = np.clip(slice, DosesAndPaths.vmin, DosesAndPaths.vmax)
             ax.plot(slice_clipped)
+            return slice_clipped
         else:
             ax.plot(slice)
+            return slice
 
     def draw_graphics(self, slice_x, slice_y):
         """
@@ -511,23 +513,23 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
-        AxesWindow.dose_limits_for_graph(slice_x, ax_x)
+        slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
         ax_x.xaxis.set_major_formatter(formatter)
         ax_x.set_xlabel('mm')
         ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
-        self.pushButton.clicked.connect(lambda: self.get_values(slice_x, 'X axis'))
+        self.pushButton.clicked.connect(lambda: self.get_values(slice_values_x, 'X axis'))
 
         # y axis
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
-        AxesWindow.dose_limits_for_graph(slice_y, ax_y)
+        slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
         ax_y.xaxis.set_major_formatter(formatter)
         ax_y.set_xlabel('mm')
         ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
-        self.pushButton_3.clicked.connect(lambda: self.get_values(slice_y, 'Y axis'))
+        self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
 
     def get_values(self, values, ax_name):
         """
