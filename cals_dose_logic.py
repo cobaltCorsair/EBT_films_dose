@@ -485,6 +485,20 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.toolbar_y = NavigationToolbar(self.canvas_map_y, self)
         self.verticalLayout_5.addWidget(self.toolbar_y)
 
+    @staticmethod
+    def dose_limits_for_graph(slice, ax):
+        """
+        Limits the dose if a checkbox was checked
+        :param slice: axis segment
+        :param ax: сanvas
+        :return:
+        """
+        if DosesAndPaths.vmax is not None and DosesAndPaths.vmin is not None:
+            slice_clipped = np.clip(slice, DosesAndPaths.vmin, DosesAndPaths.vmax)
+            ax.plot(slice_clipped)
+        else:
+            ax.plot(slice)
+
     def draw_graphics(self, slice_x, slice_y):
         """
         Method for graphing the X and Y axes
@@ -497,7 +511,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
-        ax_x.plot(slice_x)
+        AxesWindow.dose_limits_for_graph(slice_x, ax_x)
         ax_x.xaxis.set_major_formatter(formatter)
         ax_x.set_xlabel('mm')
         ax_x.set_ylabel('Absorbed dose, Gy')
@@ -508,7 +522,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
-        ax_y.plot(slice_y)
+        AxesWindow.dose_limits_for_graph(slice_y, ax_y)
         ax_y.xaxis.set_major_formatter(formatter)
         ax_y.set_xlabel('mm')
         ax_y.set_ylabel('Absorbed dose, Gy')
