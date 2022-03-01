@@ -446,6 +446,9 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         try:
             GraphicsPlotting.draw_curve_from_db(doses[1:], ods[1:], evaluate_od, self.figure_graph, self.canvas_graph)
         except Exception as e:
+            QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
+                                                    "Please select a different fitting function",
+                                     QMessageBox.Ok)
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
             print(message)
@@ -720,7 +723,12 @@ class CalcUI(QtWidgets.QMainWindow):
                 empty_file = DosesAndPaths.zero_from_db
             else:
                 empty_file = LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file)
-            self.calc_from_db(empty_file)
+            try:
+                self.calc_from_db(empty_file)
+            except ValueError:
+                QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
+                                                    "Please select a different fitting function",
+                                     QMessageBox.Ok)
 
     def calc_from_manual(self):
         """
@@ -807,7 +815,7 @@ class SaveLoadData:
         :param data: json object
         """
         filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list',
-                                                  file_name+'.json',
+                                                  file_name + '.json',
                                                   'JSON files (*.json);;all files(*.*)',
                                                   options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
@@ -1080,13 +1088,18 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         Get the values of doses, optical density in dialog window
         """
         self.value_win = ValuesWindow()
+        try:
+            if self.dose_curve_object is not None:
+                self.value_win.plainTextEdit.appendPlainText(
+                    ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.evaluateOD(self.ods)]))).replace('.', ',')))
+                self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
+                    '\n'.join(map(str, [round(x, 4) for x in self.ods]))).replace('.', ',')))
+            self.value_win.show()
+        except ValueError:
+            QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
+                                                    "Please select a different fitting function",
+                                     QMessageBox.Ok)
 
-        if self.dose_curve_object is not None:
-            self.value_win.plainTextEdit.appendPlainText(
-                ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in self.doses]))).replace('.', ',')))
-            self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
-                '\n'.join(map(str, [round(x, 4) for x in self.ods]))).replace('.', ',')))
-        self.value_win.show()
 
     def save_values(self):
         """
