@@ -1030,11 +1030,11 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         elif method == 'zero_film':
             return db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
                                                  self.comboBox_2.currentText(), int(self.comboBox_3.currentText()))
-        elif method == 'get_data':
-            return db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection, self.comboBox.currentText(),
-                                                                self.comboBox_2.currentText(),
-                                                                int(self.comboBox_3.currentText()),
-                                                                self.doubleSpinBox.value())
+        # elif method == 'get_data':
+        #     return db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection, self.comboBox.currentText(),
+        #                                                         self.comboBox_2.currentText(),
+        #                                                         int(self.comboBox_3.currentText()),
+        #                                                         self.doubleSpinBox.value())
         elif method == 'get_dict':
             return db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
                                                       self.comboBox_2.currentText(),
@@ -1074,11 +1074,11 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.doses = []
         self.ods = []
 
-        dose_ods_dict = self.database_query_methods('get_data')
-
-        for dose in dose_ods_dict:
-            self.doses.append(dose)
-            self.ods.append(dose_ods_dict[dose])
+        # dose_ods_dict = self.database_query_methods('get_data')
+        #
+        # for dose in dose_ods_dict:
+        #     self.doses.append(dose)
+        #     self.ods.append(dose_ods_dict[dose])
 
         self.pushButton_5.setDisabled(False)
         self.pushButton_9.setDisabled(False)
@@ -1093,7 +1093,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         :return:
         """
         self.curve_win = CurveWindow()
-        self.curve_win.get_curve_from_db_data(self.doses, self.ods, self.dose_curve_object)
+        self.curve_win.get_curve_from_db_data(self.dose_curve_object.calibDoses, self.dose_curve_object.calibOds, self.dose_curve_object)
         self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
 
@@ -1107,9 +1107,11 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         try:
             if self.dose_curve_object is not None:
                 self.value_win.plainTextEdit.appendPlainText(
-                    ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.evaluateOD(self.ods)]))).replace('.', ',')))
+                    ('DOSES: \n' + ('\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.evaluateOD(
+                        self.dose_curve_object.calibOds
+                    )]))).replace('.', ',')))
                 self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
-                    '\n'.join(map(str, [round(x, 4) for x in self.ods]))).replace('.', ',')))
+                    '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.calibOds]))).replace('.', ',')))
             self.value_win.show()
         except ValueError:
             QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
