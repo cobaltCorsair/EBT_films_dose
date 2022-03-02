@@ -719,8 +719,8 @@ class CalcUI(QtWidgets.QMainWindow):
                 print('Need to confirm use of calibration')
         elif self.ui.checkBox.isChecked() and not CalcUI.HAND_SWITCH_MODE:
             DosesAndPaths.empty_field_file = DosesAndPaths.zero_from_db
-        else:
-            DosesAndPaths.empty_field_file = None
+        elif not self.ui.checkBox.isChecked() and len(self.ui.lineEdit.text()) is not 0:
+            DosesAndPaths.empty_field_file = self.ui.lineEdit.text()
 
     def start_calc(self):
         """
