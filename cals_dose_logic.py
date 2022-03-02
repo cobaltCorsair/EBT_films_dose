@@ -901,8 +901,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         self.setupUi(self)
 
         self.dose_curve_object = None
-        self.doses = None
-        self.ods = None
 
         self.curve_win = None
         self.value_win = None
@@ -1030,11 +1028,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         elif method == 'zero_film':
             return db.getZeroFilmData4ExactLotNo(CalcUI.collection, self.comboBox.currentText(),
                                                  self.comboBox_2.currentText(), int(self.comboBox_3.currentText()))
-        # elif method == 'get_data':
-        #     return db.getData4CalibrationCurveWithDoseHighLimit(CalcUI.collection, self.comboBox.currentText(),
-        #                                                         self.comboBox_2.currentText(),
-        #                                                         int(self.comboBox_3.currentText()),
-        #                                                         self.doubleSpinBox.value())
         elif method == 'get_dict':
             return db.getDict4ExactCurveWithDoseLimit(CalcUI.collection, self.comboBox.currentText(),
                                                       self.comboBox_2.currentText(),
@@ -1070,15 +1063,6 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         self.dose_curve_object = curve_object
         DosesAndPaths.curve_object = self.dose_curve_object
-
-        self.doses = []
-        self.ods = []
-
-        # dose_ods_dict = self.database_query_methods('get_data')
-        #
-        # for dose in dose_ods_dict:
-        #     self.doses.append(dose)
-        #     self.ods.append(dose_ods_dict[dose])
 
         self.pushButton_5.setDisabled(False)
         self.pushButton_9.setDisabled(False)
