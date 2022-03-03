@@ -125,7 +125,7 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Form"))
+        Form.setWindowTitle(_translate("Form", "Calibration list"))
         self.pushButton_8.setText(_translate("Form", "Save this calibration as JSON"))
         self.pushButton_9.setText(_translate("Form", "Get points and doses"))
         self.label_5.setText(_translate("Form", "Empty scanner field"))
