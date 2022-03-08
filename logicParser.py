@@ -59,9 +59,9 @@ class LogicParser(object):
         pixzero = 0
         for item in dbDict:
             if item['isZeroFilm']:
-                pixzero = item['meanRedChannel']
+                pixzero = item['medianRedChannel']
                 continue
-            od = self.preparePixValue(item['meanRedChannel'], pixzero)
+            od = self.preparePixValue(item['medianRedChannel'], pixzero)
             ods.append(od)
             doses.append(item['dose'])
         self.calibOds = ods
@@ -124,7 +124,7 @@ class LogicParser(object):
             #medUnexp = 41202.0 # @todo: get
             return np.log10(medWhite / PV) - np.log10(medWhite / medUnexp)
         elif self.__dict__['odVariant'] == LogicODVariant.useDummy:
-            return np.log10(1./ PV)
+            return np.log10(medUnexp/ PV)
 
     def evaluate(self, value):
         od = self.preparePixValue(value)
