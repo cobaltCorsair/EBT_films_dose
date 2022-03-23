@@ -10,7 +10,7 @@ import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
 from scipy.optimize import curve_fit
 from PyQt5 import QtWidgets, QtCore
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox
+from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox, QCheckBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
@@ -293,7 +293,9 @@ class Form(QtWidgets.QWidget, Ui_Form):
         spin_box = QtWidgets.QDoubleSpinBox()
         qline_edit = QtWidgets.QLineEdit()
         push_button = QtWidgets.QPushButton("Select")
+        checkbox = QtWidgets.QCheckBox()
 
+        self.gridLayout_3.addWidget(checkbox)
         self.gridLayout_3.addWidget(spin_box)
         self.gridLayout_3.addWidget(qline_edit)
         self.gridLayout_3.addWidget(push_button)
@@ -307,13 +309,17 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         Deleting fields to record paths/doses
         """
-        index = self.gridLayout_3.count()
-        if index != 5:
-            for i in range(3):
-                index -= 1
-                my_widget = self.gridLayout_3.itemAt(index).widget()
-                my_widget.setParent(None)
-                self.adjustSize()
+        widgets = [self.gridLayout_3.itemAt(i).widget() for i in range(self.gridLayout_3.count())]
+        checkboxes = [i for i in widgets if isinstance(i, QCheckBox)]
+
+        for k in checkboxes:
+            if k.checkState() == 2:
+                index = widgets.index(k)
+                for j in range(4):
+                    my_widget = self.gridLayout_3.itemAt(index).widget()
+                    my_widget.setParent(None)
+                    self.adjustSize()
+                    widgets.remove(my_widget)
 
     def get_all_params_widgets(self):
         """
@@ -362,7 +368,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         The method restores the fields created by the user when the window is reopened
         """
         data_count = len(DosesAndPaths.doses)
-        if self.gridLayout_3.count() >= 5 and data_count > 1:
+        if self.gridLayout_3.count() >= 6 and data_count > 1:
             for i in range(data_count - 1):
                 self.dynamic_add_fields()
 
@@ -447,8 +453,8 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
             GraphicsPlotting.draw_curve_from_db(doses[1:], ods[1:], evaluate_od, self.figure_graph, self.canvas_graph)
         except Exception as e:
             QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                    "Please select a different fitting function",
-                                     QMessageBox.Ok)
+                                                "Please select a different fitting function",
+                                 QMessageBox.Ok)
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
             print(message)
@@ -1077,7 +1083,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         :return:
         """
         self.curve_win = CurveWindow()
-        self.curve_win.get_curve_from_db_data(self.dose_curve_object.calibDoses, self.dose_curve_object.calibOds, self.dose_curve_object)
+        self.curve_win.get_curve_from_db_data(self.dose_curve_object.calibDoses, self.dose_curve_object.calibOds,
+                                              self.dose_curve_object)
         self.curve_win.setMinimumSize(640, 480)
         self.curve_win.show()
 
@@ -1099,9 +1106,8 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
             self.value_win.show()
         except ValueError:
             QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                    "Please select a different fitting function",
-                                     QMessageBox.Ok)
-
+                                                "Please select a different fitting function",
+                                 QMessageBox.Ok)
 
     def save_values(self):
         """
