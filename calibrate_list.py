@@ -13,7 +13,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(337, 204)
+        Form.resize(398, 204)
         Form.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.gridLayout_2 = QtWidgets.QGridLayout(Form)
         self.gridLayout_2.setObjectName("gridLayout_2")
@@ -68,6 +68,13 @@ class Ui_Form(object):
         self.label_4.setFont(font)
         self.label_4.setObjectName("label_4")
         self.horizontalLayout.addWidget(self.label_4)
+        self.comboBox = QtWidgets.QComboBox(Form)
+        self.comboBox.setObjectName("comboBox")
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.comboBox.addItem("")
+        self.horizontalLayout.addWidget(self.comboBox)
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem)
         self.pushButton_2 = QtWidgets.QPushButton(Form)
@@ -131,13 +138,17 @@ class Ui_Form(object):
 
     def retranslateUi(self, Form):
         _translate = QtCore.QCoreApplication.translate
-        Form.setWindowTitle(_translate("Form", "Form"))
+        Form.setWindowTitle(_translate("Form", "Calibration list"))
         self.pushButton_8.setText(_translate("Form", "Save this calibration as JSON"))
         self.pushButton_9.setText(_translate("Form", "Get points and doses"))
         self.label_5.setText(_translate("Form", "Empty scanner field"))
         self.pushButton_6.setText(_translate("Form", "Select"))
         self.label_2.setText(_translate("Form", "Sigma"))
         self.label_4.setText(_translate("Form", "%"))
+        self.comboBox.setItemText(0, _translate("Form", "base fit_func"))
+        self.comboBox.setItemText(1, _translate("Form", "fit_func_pol2"))
+        self.comboBox.setItemText(2, _translate("Form", "fit_func_pol3"))
+        self.comboBox.setItemText(3, _translate("Form", "fit_func_pol5"))
         self.pushButton_2.setText(_translate("Form", "Add dose"))
         self.pushButton_3.setText(_translate("Form", "Remove selected"))
         self.label.setText(_translate("Form", "Dose"))
