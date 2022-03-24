@@ -88,7 +88,7 @@ class Dose(QThread):
     """
     progressChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zero_dose, zero_dose_for_irrad_film, calibrate_list, doses_list, irradiation_film, sigma):
+    def __init__(self, zero_dose, zero_dose_for_irrad_film, calibrate_list, doses_list, irradiation_film, sigma, func_name):
         super().__init__()
         self.zero_dose = zero_dose
         self.zero_dose_for_irrad_film = zero_dose_for_irrad_film
@@ -96,6 +96,7 @@ class Dose(QThread):
         self.irradiation_film = irradiation_film
         self.setting_doses = doses_list
         self.sigma = sigma
+        self.func_name = func_name
 
     def run(self):
         """
@@ -106,7 +107,22 @@ class Dose(QThread):
         self.calc_dose_map()
 
     @staticmethod
-    def fit_func(od, a, b, c):
+    def fit_func(func_name):
+        """
+        Returns the static method defining the approximation function
+        :param func_name: method name
+        """
+        functions = {
+            'base fit_func': Dose.fit_func1,
+            'fit_func_pol2': Dose.fit_func_pol2,
+            'fit_func_pol3': Dose.fit_func_pol3,
+            'fit_func_pol5': Dose.fit_func_pol5
+        }
+        if func_name in functions:
+            return functions[func_name]
+
+    @staticmethod
+    def fit_func1(od, a, b, c):
         """
         Fitting function for calibration curve
         :param od:
@@ -186,7 +202,7 @@ class Dose(QThread):
         for i in self.calibrate_list:
             self.find_best_fit(i)
         try:
-            p_opt, p_cov = curve_fit(self.fit_func, np.array(DosesAndPaths.calculation_doses[1:]),
+            p_opt, p_cov = curve_fit(self.fit_func(self.func_name), np.array(DosesAndPaths.calculation_doses[1:]),
                                      np.array(self.setting_doses[1:]),
                                      sigma=np.array(self.setting_doses[1:]) * (self.sigma / 100))
             DosesAndPaths.p_opt = p_opt
@@ -208,7 +224,7 @@ class Dose(QThread):
             for i in np.nditer(Dose.get_imarray(user_img)):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
-                x = self.fit_func(x, *DosesAndPaths.p_opt)
+                x = self.fit_func(self.func_name)(x, *DosesAndPaths.p_opt)
                 DosesAndPaths.z = np.append(DosesAndPaths.z, x)
 
                 counter = counter + 1
@@ -244,6 +260,7 @@ class DosesAndPaths:
     zero_from_db = None
     vmin = None
     vmax = None
+    fit_func_type = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -339,6 +356,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
         DosesAndPaths.sigma = sigma
+        DosesAndPaths.fit_func_type = self.comboBox.currentText()
         DosesAndPaths.empty_scanner_field_file = self.lineEdit_2.text()
         DosesAndPaths.calculation_doses.clear()
 
@@ -388,6 +406,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
 
         self.spinBox.setValue(DosesAndPaths.sigma)
         self.lineEdit_2.setText(DosesAndPaths.empty_scanner_field_file)
+        self.comboBox.setCurrentText(DosesAndPaths.fit_func_type)
 
     def get_values(self):
         """
@@ -437,11 +456,12 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         try:
             calc = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file, DosesAndPaths.paths,
                         DosesAndPaths.doses,
-                        DosesAndPaths.irrad_film_file, DosesAndPaths.sigma)
+                        DosesAndPaths.irrad_film_file, DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
             calc.red_channel_calc()
             calc.calculate_calibrate_film()
-            GraphicsPlotting.draw_curve(Dose.fit_func, DosesAndPaths.calculation_doses, DosesAndPaths.doses,
-                                        DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph, DosesAndPaths.sigma)
+            GraphicsPlotting.draw_curve(Dose.fit_func(DosesAndPaths.fit_func_type), DosesAndPaths.calculation_doses,
+                                        DosesAndPaths.doses, DosesAndPaths.p_opt, self.figure_graph, self.canvas_graph,
+                                        DosesAndPaths.sigma)
         except (ValueError, TypeError):
             print('Incorrect parameters')
 
@@ -761,7 +781,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
                            DosesAndPaths.paths, DosesAndPaths.doses,
                            DosesAndPaths.irrad_film_file,
-                           DosesAndPaths.sigma)
+                           DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
         self.thread.start()
         self.thread.progressChanged.connect(self.progress_bar_update)
         self.insert_tiff_file()
