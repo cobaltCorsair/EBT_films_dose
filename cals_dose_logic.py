@@ -352,6 +352,11 @@ class Form(QtWidgets.QWidget, Ui_Form):
                 paths.append(widget.text())
             if isinstance(widget, QDoubleSpinBox):
                 doses.append(widget.value())
+            if isinstance(widget, QLineEdit) and widget.text() is '':
+                QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
+                                                    "Check the fields with film paths for emptiness",
+                                     QMessageBox.Ok)
+                return False
 
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
