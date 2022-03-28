@@ -65,7 +65,7 @@ def retBaseDict(facility, ebtLotNo, hoursAfterIrrad, dpi):
     @param hoursAfterIrrad: время после облучения
     @type hoursAfterIrrad: int
     @param dpi: DPI
-    @type dpi: dict
+    @type dpi: int
     @return:
     @rtype: dict
     """
@@ -86,7 +86,7 @@ def parseFolder2DataDict(fDir, rBase):
     @param rBase: словарь с базовыми параметрами
     @return: генератор yield
     '''
-    fDir = r"V:\!Установки\EBT3\Калибровка Электроны 6 МэВ\Lot 09301304"
+    #fDir = r"V:\!Установки\EBT3\Калибровка Co-60\EBT3_Lot#10241901_scanner115"
     for fl in os.listdir(fDir):
         dDict = rBase.copy()
         dose = path2dose(fl)
@@ -101,8 +101,8 @@ def parseFolder2DataDict(fDir, rBase):
         yield dDict
 
 if __name__ == '__main__':
-    fDir = r"V:\!Установки\EBT3\Калибровка Co-60\EBT3_Lot#09301304"
-    rBase = retBaseDict('Co-60 (MRRC)', '09301304', 24, 150)
+    fDir = r"V:\!Установки\EBT3\Калибровка Co-60\EBT3_Lot#10241901_scanner115_lp"
+    rBase = retBaseDict('Co-60 (MRRC) sc. 115', '10241901 (rp)', 24, 150)
 
     client = MongoClient('mongodb://10.1.30.32:27017/')
     db = client['EBT_films_dose']
