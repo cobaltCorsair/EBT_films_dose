@@ -13,7 +13,7 @@ from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox, QCheckBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-
+from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
 from calibrate_list import Ui_Form
 from Axes import Ui_Form as Axes_form
@@ -88,7 +88,8 @@ class Dose(QThread):
     """
     progressChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zero_dose, zero_dose_for_irrad_film, calibrate_list, doses_list, irradiation_film, sigma, func_name):
+    def __init__(self, zero_dose, zero_dose_for_irrad_film, calibrate_list, doses_list, irradiation_film, sigma,
+                 func_name):
         super().__init__()
         self.zero_dose = zero_dose
         self.zero_dose_for_irrad_film = zero_dose_for_irrad_film
@@ -610,6 +611,8 @@ class CalcUI(QtWidgets.QMainWindow):
         self.bd_win = None
         self.graphic_dialog = None
         self.thread = None
+        self.RS = None
+        self.pic_ax = None
 
         self.image_map = plt.figure()
         self.image_canvas = FigureCanvas(self.image_map)
@@ -691,7 +694,50 @@ class CalcUI(QtWidgets.QMainWindow):
         ax.xaxis.set_major_formatter(formatter)
         ax.yaxis.set_major_formatter(formatter)
         ax.imshow(img)
+
+        self.pic_ax = ax
+
+        self.RS = RectangleSelector(ax, self.line_select_callback,
+                               drawtype='box', useblit=False, button=[1],
+                               minspanx=5, minspany=5, spancoords='pixels',
+                               interactive=True)
+
+        self.image_canvas.mpl_connect('key_press_event', lambda event: self.toggle_selector(event, ax))
+
         self.image_canvas.draw()
+
+    def line_select_callback(self, eclick, erelease):
+        '''
+        :param eclick: matplotlib event at press
+        :param erelease: matplotlib event at release
+        :return:
+        '''
+        print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
+        print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
+        print(' used button   : ', eclick.button)
+
+        center = self.RS.center  # xy coord, units same as plot axes
+        extents = self.RS.extents  # Return (xmin, xmax, ymin, ymax)
+        self.get_crop(*extents)
+
+    def get_crop(self, xmin, xmax, ymin, ymax):
+        self.pic_ax.set_ylim(ymin, ymax)
+        self.pic_ax.set_xlim(xmin, xmax)
+        self.pic_ax.invert_yaxis()
+        self.RS.set_visible(False)
+
+    def toggle_selector(self, event, ax):
+        print(' Key pressed: {}'.format(event.key))
+        if event.key in ['D', 'd'] and self.RS.active:
+            print(' RectangleSelector deactivated.')
+            self.RS.set_active(False)
+            self.RS.set_visible(False)
+            self.RS.update()
+        if event.key in ['A', 'a'] and not self.RS.active:
+            print(' RectangleSelector activated.')
+            self.RS.set_active(True)
+            self.RS.set_visible(True)
+            self.RS.update()
 
     def onclick(self, event, ax):
         """
