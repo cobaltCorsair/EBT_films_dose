@@ -702,7 +702,7 @@ class CalcUI(QtWidgets.QMainWindow):
                                minspanx=5, minspany=5, spancoords='pixels',
                                interactive=True)
 
-        self.image_canvas.mpl_connect('key_press_event', lambda event: self.toggle_selector(event, ax))
+        # self.image_canvas.mpl_connect('key_press_event', lambda event: self.toggle_selector(event))
 
         self.image_canvas.draw()
 
@@ -718,15 +718,25 @@ class CalcUI(QtWidgets.QMainWindow):
 
         center = self.RS.center  # xy coord, units same as plot axes
         extents = self.RS.extents  # Return (xmin, xmax, ymin, ymax)
-        self.get_crop(*extents)
+        # crop image
+        self.get_crop(self.pic_ax, *extents)
 
-    def get_crop(self, xmin, xmax, ymin, ymax):
-        self.pic_ax.set_ylim(ymin, ymax)
-        self.pic_ax.set_xlim(xmin, xmax)
-        self.pic_ax.invert_yaxis()
+    def get_crop(self, ax, xmin, xmax, ymin, ymax):
+        """
+        Get cropped image
+        :param ax: ax object
+        :param xmin:
+        :param xmax:
+        :param ymin:
+        :param ymax:
+        :return:
+        """
+        ax.set_ylim(ymin, ymax)
+        ax.set_xlim(xmin, xmax)
+        ax.invert_yaxis()
         self.RS.set_visible(False)
 
-    def toggle_selector(self, event, ax):
+    def toggle_selector(self, event):
         print(' Key pressed: {}'.format(event.key))
         if event.key in ['D', 'd'] and self.RS.active:
             print(' RectangleSelector deactivated.')
