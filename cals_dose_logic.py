@@ -650,6 +650,7 @@ class CalcUI(QtWidgets.QMainWindow):
         if len(self.ui.lineEdit_3.text()) != 0:
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
             self.ui.lineEdit_3.setDisabled(True)
+            self.insert_tiff_file()
 
     def get_empty_field_file(self):
         """
@@ -721,6 +722,25 @@ class CalcUI(QtWidgets.QMainWindow):
         # crop image
         self.get_crop(self.pic_ax, *extents)
 
+    def crop(self, image_link, xmin, xmax, ymin, ymax):
+        """
+        Return the cropped image at the xmin, xmax, ymin, ymax coordinates
+        """
+        image = Dose.get_imarray(image_link)
+
+        if xmax == -1:
+            xmax = image.shape[1] - 1
+        if ymax == -1:
+            ymax = image.shape[0] - 1
+
+        mask = np.zeros(image.shape)
+        mask[ymin:ymax + 1, xmin:xmax + 1] = 1
+        m = mask > 0
+
+        print(image[m].reshape((ymax + 1 - ymin, xmax + 1 - xmin)))
+
+        return image[m].reshape((ymax + 1 - ymin, xmax + 1 - xmin))
+
     def get_crop(self, ax, xmin, xmax, ymin, ymax):
         """
         Get cropped image
@@ -735,6 +755,8 @@ class CalcUI(QtWidgets.QMainWindow):
         ax.set_xlim(xmin, xmax)
         ax.invert_yaxis()
         self.RS.set_visible(False)
+        # crop image
+        self.crop(DosesAndPaths.irrad_film_file, int(xmin), int(xmax), int(ymin), int(ymax))
 
     def toggle_selector(self, event):
         print(' Key pressed: {}'.format(event.key))
@@ -845,7 +867,6 @@ class CalcUI(QtWidgets.QMainWindow):
                            DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
         self.thread.start()
         self.thread.progressChanged.connect(self.progress_bar_update)
-        self.insert_tiff_file()
 
     def calc_from_db(self, empty_file):
         """
@@ -861,7 +882,6 @@ class CalcUI(QtWidgets.QMainWindow):
         z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
         DosesAndPaths.z = (DosesAndPaths.curve_object.evaluateOD(z_object)).reshape(im_arr_first.shape)
         GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
-        self.insert_tiff_file()
         self.progress_bar_update(100)
 
     def get_db_and_setting_window(self):
