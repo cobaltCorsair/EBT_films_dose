@@ -216,13 +216,12 @@ class Dose(QThread):
         Working with user image
         """
         try:
-            user_img = self.irradiation_film
             zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-            print("\nShape of scanned film:", np.shape(Dose.get_imarray(user_img)))
+            print("\nShape of scanned film:", np.shape(DosesAndPaths.irrad_film_array))
             progress = 0
             counter = 0
             print("\nPrepearing your file:\n")
-            for i in np.nditer(Dose.get_imarray(user_img)):
+            for i in np.nditer(DosesAndPaths.irrad_film_array):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
                 x = self.fit_func(self.func_name)(x, *DosesAndPaths.p_opt)
@@ -230,11 +229,11 @@ class Dose(QThread):
 
                 counter = counter + 1
                 if counter % 10000 == 0:
-                    print("Iteration ", counter, "/", np.size(Dose.get_imarray(user_img)))
+                    print("Iteration ", counter, "/", np.size(DosesAndPaths.irrad_film_array))
                     progress += 1
                     self.progressChanged.emit(round(progress))
 
-            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(Dose.get_imarray(user_img)))
+            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(DosesAndPaths.irrad_film_array))
             print("\nDose calculation ended!!!\n")
             self.progressChanged.emit(100)
             GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
@@ -262,6 +261,8 @@ class DosesAndPaths:
     vmin = None
     vmax = None
     fit_func_type = None
+    irrad_film_array = None
+    irrad_film_array_original = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -645,10 +646,14 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Find and paste the irradiate film file in tiff format
         """
+        DosesAndPaths.irrad_film_array_original = None
+        DosesAndPaths.irrad_film_array = None
+
         self.ui.lineEdit_3.setText(self.search_file('*.tif'))
 
         if len(self.ui.lineEdit_3.text()) != 0:
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
+            DosesAndPaths.irrad_film_array_original = Dose.get_imarray(DosesAndPaths.irrad_film_file)
             self.ui.lineEdit_3.setDisabled(True)
             self.insert_tiff_file()
 
@@ -722,11 +727,12 @@ class CalcUI(QtWidgets.QMainWindow):
         # crop image
         self.get_crop(self.pic_ax, *extents)
 
-    def crop(self, image_link, xmin, xmax, ymin, ymax):
+    @staticmethod
+    def crop(xmin, xmax, ymin, ymax):
         """
         Return the cropped image at the xmin, xmax, ymin, ymax coordinates
         """
-        image = Dose.get_imarray(image_link)
+        image = DosesAndPaths.irrad_film_array_original
 
         if xmax == -1:
             xmax = image.shape[1] - 1
@@ -737,8 +743,7 @@ class CalcUI(QtWidgets.QMainWindow):
         mask[ymin:ymax + 1, xmin:xmax + 1] = 1
         m = mask > 0
 
-        print(image[m].reshape((ymax + 1 - ymin, xmax + 1 - xmin)))
-
+        DosesAndPaths.irrad_film_array = image[m].reshape((ymax + 1 - ymin, xmax + 1 - xmin))
         return image[m].reshape((ymax + 1 - ymin, xmax + 1 - xmin))
 
     def get_crop(self, ax, xmin, xmax, ymin, ymax):
@@ -756,7 +761,7 @@ class CalcUI(QtWidgets.QMainWindow):
         ax.invert_yaxis()
         self.RS.set_visible(False)
         # crop image
-        self.crop(DosesAndPaths.irrad_film_file, int(xmin), int(xmax), int(ymin), int(ymax))
+        CalcUI.crop(int(xmin), int(xmax), int(ymin), int(ymax))
 
     def toggle_selector(self, event):
         print(' Key pressed: {}'.format(event.key))
@@ -868,6 +873,19 @@ class CalcUI(QtWidgets.QMainWindow):
         self.thread.start()
         self.thread.progressChanged.connect(self.progress_bar_update)
 
+    @staticmethod
+    def choose_orig_or_crop():
+        """
+        Select the variable to be passed to the function depending on its state
+        :return: DosesAndPaths.irrad_film_array or DosesAndPaths.irrad_film_array
+        """
+        if DosesAndPaths.irrad_film_array is not None and DosesAndPaths.irrad_film_array_original is not None:
+            return DosesAndPaths.irrad_film_array
+        if DosesAndPaths.irrad_film_array is None and DosesAndPaths.irrad_film_array_original is not None:
+            return DosesAndPaths.irrad_film_array_original
+        if DosesAndPaths.irrad_film_array is not None and DosesAndPaths.irrad_film_array_original is None:
+            return DosesAndPaths.irrad_film_array
+
     def calc_from_db(self, empty_file):
         """
         Perform calculations from the database usage mode
@@ -876,7 +894,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.get_dpi_value()
         DosesAndPaths.z = list()
-        im_arr_first = Dose.get_imarray(DosesAndPaths.irrad_film_file)
+        im_arr_first = CalcUI.choose_orig_or_crop()
         im_arr_flatt = im_arr_first.flatten()
         parsed_empty_file = empty_file
         z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
