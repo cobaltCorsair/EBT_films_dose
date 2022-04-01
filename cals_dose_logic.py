@@ -217,11 +217,11 @@ class Dose(QThread):
         """
         try:
             zero_dose_for_irrad_film = self.calc_dose(self.zero_dose_for_irrad_film)
-            print("\nShape of scanned film:", np.shape(DosesAndPaths.irrad_film_array))
+            print("\nShape of scanned film:", np.shape(CalcUI.choose_orig_or_crop()))
             progress = 0
             counter = 0
             print("\nPrepearing your file:\n")
-            for i in np.nditer(DosesAndPaths.irrad_film_array):
+            for i in np.nditer(CalcUI.choose_orig_or_crop()):
                 x = np.log10(DosesAndPaths.red_channel_blank / i)
                 x = x - zero_dose_for_irrad_film
                 x = self.fit_func(self.func_name)(x, *DosesAndPaths.p_opt)
@@ -229,11 +229,11 @@ class Dose(QThread):
 
                 counter = counter + 1
                 if counter % 10000 == 0:
-                    print("Iteration ", counter, "/", np.size(DosesAndPaths.irrad_film_array))
+                    print("Iteration ", counter, "/", np.size(CalcUI.choose_orig_or_crop()))
                     progress += 1
                     self.progressChanged.emit(round(progress))
 
-            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(DosesAndPaths.irrad_film_array))
+            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(CalcUI.choose_orig_or_crop()))
             print("\nDose calculation ended!!!\n")
             self.progressChanged.emit(100)
             GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
