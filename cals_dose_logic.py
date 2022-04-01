@@ -355,10 +355,7 @@ class Form(QtWidgets.QWidget, Ui_Form):
             if isinstance(widget, QDoubleSpinBox):
                 doses.append(widget.value())
             if isinstance(widget, QLineEdit) and widget.text() is '':
-                QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                    "Check the fields with film paths for emptiness",
-                                     QMessageBox.Ok)
-                return False
+                Warnings.error_empty_value()
 
         DosesAndPaths.doses = doses
         DosesAndPaths.paths = paths
@@ -479,9 +476,7 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         try:
             GraphicsPlotting.draw_curve_from_db(doses[1:], ods[1:], evaluate_od, self.figure_graph, self.canvas_graph)
         except Exception as e:
-            QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                "Please select a different fitting function",
-                                 QMessageBox.Ok)
+            Warnings.error_incorrect_value()
             template = "An exception of type {0} occurred. Arguments:\n{1!r}"
             message = template.format(type(e).__name__, e.args)
             print(message)
@@ -637,6 +632,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_4.clicked.connect(self.start_calc)
         self.ui.pushButton_9.clicked.connect(SaveLoadData.load_json)
         self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
+        self.ui.pushButton_3.clicked.connect(self.cropping_by_button)
 
         self.ui.pushButton_2.setDisabled(True)
         if CalcUI.connect:
@@ -704,11 +700,9 @@ class CalcUI(QtWidgets.QMainWindow):
         self.pic_ax = ax
 
         self.RS = RectangleSelector(ax, self.line_select_callback,
-                               drawtype='box', useblit=False, button=[1],
-                               minspanx=5, minspany=5, spancoords='pixels',
-                               interactive=True)
-
-        # self.image_canvas.mpl_connect('key_press_event', lambda event: self.toggle_selector(event))
+                                    drawtype='box', useblit=False, button=[1],
+                                    minspanx=5, minspany=5, spancoords='pixels',
+                                    interactive=True)
 
         self.image_canvas.draw()
 
@@ -724,8 +718,6 @@ class CalcUI(QtWidgets.QMainWindow):
 
         center = self.RS.center  # xy coord, units same as plot axes
         extents = self.RS.extents  # Return (xmin, xmax, ymin, ymax)
-        # crop image
-        self.get_crop(self.pic_ax, *extents)
 
     @staticmethod
     def crop(xmin, xmax, ymin, ymax):
@@ -760,21 +752,16 @@ class CalcUI(QtWidgets.QMainWindow):
         ax.set_xlim(xmin, xmax)
         ax.invert_yaxis()
         self.RS.set_visible(False)
+        self.image_canvas.draw_idle()
         # crop image
         CalcUI.crop(int(xmin), int(xmax), int(ymin), int(ymax))
 
-    def toggle_selector(self, event):
-        print(' Key pressed: {}'.format(event.key))
-        if event.key in ['D', 'd'] and self.RS.active:
-            print(' RectangleSelector deactivated.')
-            self.RS.set_active(False)
-            self.RS.set_visible(False)
-            self.RS.update()
-        if event.key in ['A', 'a'] and not self.RS.active:
-            print(' RectangleSelector activated.')
-            self.RS.set_active(True)
-            self.RS.set_visible(True)
-            self.RS.update()
+    def cropping_by_button(self):
+        # TODO: Необходимо выставить условие на активность метода лишь тогда, когда имеется выделение
+        if self.pic_ax and self.RS.extents:
+            self.get_crop(self.pic_ax, *self.RS.extents)
+        else:
+            Warnings.inform_about_area()
 
     def onclick(self, event, ax):
         """
@@ -856,9 +843,7 @@ class CalcUI(QtWidgets.QMainWindow):
             try:
                 self.calc_from_db(empty_file)
             except ValueError:
-                QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                    "Please select a different fitting function",
-                                     QMessageBox.Ok)
+                Warnings.error_incorrect_value()
 
     def calc_from_manual(self):
         """
@@ -926,6 +911,48 @@ class CalcUI(QtWidgets.QMainWindow):
             return True
 
 
+class Warnings:
+    """
+    This class contains pop-up errors
+    """
+
+    @staticmethod
+    def error_exist_files(file) -> list:
+        """
+        :param file: list only
+        :return:
+        """
+        QMessageBox.critical(None, "Error", "<b>No such file or directory</b><br><br>"
+                                            f"Some selected files are not on the disk. List of files:<br>"
+                                            f"{'<br>'.join(file)}", QMessageBox.Ok)
+
+    @staticmethod
+    def error_special_symbols():
+        QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
+                                             "Please re-save the file using the correct name without special "
+                                             "characters",
+                             QMessageBox.Ok)
+
+    @staticmethod
+    def error_incorrect_value():
+        QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
+                                            "Please select a different fitting function",
+                             QMessageBox.Ok)
+
+    @staticmethod
+    def error_empty_value():
+        QMessageBox.critical(None, "Error", "<b>Empty value</b><br><br>"
+                                            "Check the fields with film paths for emptiness",
+                             QMessageBox.Ok)
+        return False
+
+    @staticmethod
+    def inform_about_area():
+        QMessageBox.information(None, "Information", "<b>Before cutting the film</b><br>"
+                                "need to allocate an area for trimming",
+                                QMessageBox.Ok)
+
+
 class SaveLoadData:
     """
     Сlass for save and load json
@@ -964,10 +991,7 @@ class SaveLoadData:
                 with open(filename, 'w', encoding='utf-8') as outfile:
                     json.dump(data, outfile, ensure_ascii=False, indent=4)
             except OSError:
-                QMessageBox.critical(None, "Error ", "<b>Incorrect name</b><br><br>"
-                                                     "Please re-save the file using the correct name without special "
-                                                     "characters",
-                                     QMessageBox.Ok)
+                Warnings.error_special_symbols()
 
     @staticmethod
     def load_json():
@@ -975,6 +999,7 @@ class SaveLoadData:
         Load and parse json file
         """
         data = application.search_file('*.json')
+        not_exist_files = []
 
         if os.path.exists(data):
             with open(data, encoding='utf-8') as f:
@@ -985,6 +1010,15 @@ class SaveLoadData:
 
                 DosesAndPaths.sigma = data['sigma']
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
+
+                Warnings().error_exist_files([data['empty_scanner_field_file']])
+
+        for i in p.values():
+            if not os.path.exists(i):
+                not_exist_files.append(i)
+
+        if not_exist_files:
+            Warnings().error_exist_files(not_exist_files)
 
     @staticmethod
     def save_db_win_setting(facility, lot, hours, dose_limit, od, fit_func, fitting):
@@ -1224,9 +1258,7 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                     '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.calibOds]))).replace('.', ',')))
             self.value_win.show()
         except ValueError:
-            QMessageBox.critical(None, "Error", "<b>Incorrect value</b><br><br>"
-                                                "Please select a different fitting function",
-                                 QMessageBox.Ok)
+            Warnings.error_incorrect_value()
 
     def save_values(self):
         """
