@@ -609,6 +609,8 @@ class CalcUI(QtWidgets.QMainWindow):
         self.thread = None
         self.RS = None
         self.pic_ax = None
+        self.start_pos = None
+        self.end_pos = None
 
         self.image_map = plt.figure()
         self.image_canvas = FigureCanvas(self.image_map)
@@ -716,6 +718,9 @@ class CalcUI(QtWidgets.QMainWindow):
         print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
         print(' used button   : ', eclick.button)
 
+        self.start_pos = [eclick.xdata, eclick.ydata]
+        self.end_pos = [erelease.xdata, erelease.ydata]
+
         center = self.RS.center  # xy coord, units same as plot axes
         extents = self.RS.extents  # Return (xmin, xmax, ymin, ymax)
 
@@ -757,11 +762,19 @@ class CalcUI(QtWidgets.QMainWindow):
         CalcUI.crop(int(xmin), int(xmax), int(ymin), int(ymax))
 
     def cropping_by_button(self):
-        # TODO: Необходимо выставить условие на активность метода лишь тогда, когда имеется выделение
-        if self.pic_ax and self.RS.extents:
+        """
+        This method crops the image at the click of a button
+        :return:
+        """
+        if self.pic_ax and self.RS.extents and \
+                self.start_pos is not None and self.end_pos is not None and \
+                self.start_pos[0] != self.end_pos[0]:
             self.get_crop(self.pic_ax, *self.RS.extents)
         else:
             Warnings.inform_about_area()
+
+        self.start_pos = None
+        self.end_pos = None
 
     def onclick(self, event, ax):
         """
