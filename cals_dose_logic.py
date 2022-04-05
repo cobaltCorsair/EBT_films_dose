@@ -5,6 +5,7 @@ import sys
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas
 import tifffile as tifimage
 import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
@@ -637,6 +638,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_9.clicked.connect(SaveLoadData.load_json)
         self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
         self.ui.pushButton_3.clicked.connect(self.cropping_by_button)
+        self.ui.pushButton_5.clicked.connect(SaveLoadData.save_as_excel_file)
 
         self.ui.pushButton_2.setDisabled(True)
         if CalcUI.connect:
@@ -846,11 +848,14 @@ class CalcUI(QtWidgets.QMainWindow):
             try:
                 DosesAndPaths.empty_field_file = DosesAndPaths.paths[0]
             except (TypeError, IndexError):
-                print('Need to confirm use of calibration')
+                Warnings.error_confirm_calibration()
+
         elif self.ui.checkBox.isChecked() and not CalcUI.HAND_SWITCH_MODE:
             DosesAndPaths.empty_field_file = DosesAndPaths.zero_from_db
         elif not self.ui.checkBox.isChecked() and len(self.ui.lineEdit.text()) is not 0:
             DosesAndPaths.empty_field_file = self.ui.lineEdit.text()
+        else:
+            Warnings.error_empty_film()
 
     def start_calc(self):
         """
@@ -867,8 +872,12 @@ class CalcUI(QtWidgets.QMainWindow):
             # db mode
             if self.ui.checkBox.isChecked():
                 empty_file = DosesAndPaths.zero_from_db
-            else:
+            elif len(self.ui.lineEdit.text()) is not 0:
                 empty_file = LogicParser.getMean4FilmByFilename(DosesAndPaths.empty_field_file)
+            else:
+                Warnings.error_empty_film()
+                return False
+
             try:
                 self.calc_from_db(empty_file)
             except ValueError:
@@ -981,8 +990,27 @@ class Warnings:
     @staticmethod
     def inform_about_area():
         QMessageBox.information(None, "Information", "<b>Before cutting the film</b><br>"
-                                "need to allocate an area for trimming",
+                                                     "need to allocate an area for trimming",
                                 QMessageBox.Ok)
+
+    @staticmethod
+    def error_confirm_calibration():
+        QMessageBox.critical(None, "Error", "<b>Empty value</b><br><br>"
+                                            "Need to confirm use of calibration",
+                             QMessageBox.Ok)
+        return False
+
+    @staticmethod
+    def error_empty_film():
+        QMessageBox.critical(None, "Error", "<b>Empty value</b><br><br>"
+                                            "Need to select a blank film or use the first file",
+                             QMessageBox.Ok)
+
+    @staticmethod
+    def error_empty_dose():
+        QMessageBox.critical(None, "Data error", "<b>No data</b><br><br>"
+                                            "Need to calculate dose before outputting to file",
+                             QMessageBox.Ok)
 
 
 class SaveLoadData:
@@ -1077,6 +1105,25 @@ class SaveLoadData:
                 SaveLoadData.save_db_win_setting(data['facility_name'], data['lot_number'], data['hours_after_irrad'],
                                                  data['dose_limit'], data['optical_density'], data['fit_funtion'],
                                                  data['curve_fitting'])
+
+    @staticmethod
+    def save_as_excel_file():
+        """
+        Save xlsx file
+        """
+        if len(DosesAndPaths.z) > 0:
+            dataframe_array = pandas.DataFrame(DosesAndPaths.z).T
+
+            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', 'dose_data.xlsx',
+                                                      'JSON files (*.xlsx);;all files(*.*)',
+                                                      options=QFileDialog.DontUseNativeDialog)
+            if filename is not '':
+                try:
+                    dataframe_array.to_excel(excel_writer=filename+'.xlsx')
+                except OSError:
+                    Warnings.error_special_symbols()
+        else:
+            Warnings.error_empty_dose()
 
 
 class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
