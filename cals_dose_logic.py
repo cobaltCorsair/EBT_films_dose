@@ -23,6 +23,7 @@ from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from database import dbProxy as db
 from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant, LogicParser
+from filters import Filters
 
 plt.switch_backend('agg')
 
@@ -623,6 +624,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.toolbar_map = NavigationToolbar(self.canvas_map, self)
         self.ui.verticalLayout_2.addWidget(self.toolbar_map)
         self.ui.verticalLayout_2.addWidget(self.canvas_map)
+        self.ui.comboBox.addItems(self.get_filters)
 
         self.ax = self.figure_map.add_subplot(111)
         # Set cursor
@@ -801,6 +803,16 @@ class CalcUI(QtWidgets.QMainWindow):
             except IndexError:
                 print('Too many indices for array')
 
+    @property
+    def get_filters(self):
+        """Get filters variant"""
+        filters = [i.name for i in Filters]
+        return filters
+
+    def select_filter(self):
+        """For test"""
+        print(self.ui.comboBox.currentText(), Filters.__dict__[self.ui.comboBox.currentText()])
+
     def get_dialog_window(self):
         """
         Show dialog window with doses and paths
@@ -861,6 +873,9 @@ class CalcUI(QtWidgets.QMainWindow):
                 self.calc_from_db(empty_file)
             except ValueError:
                 Warnings.error_incorrect_value()
+
+        # Todo: убрать вывод названия фильтра по кнопке "Calc" после имплементации ф-ции
+        self.select_filter()
 
     def calc_from_manual(self):
         """
