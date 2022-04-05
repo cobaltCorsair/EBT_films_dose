@@ -654,6 +654,10 @@ class CalcUI(QtWidgets.QMainWindow):
             DosesAndPaths.irrad_film_array_original = Dose.get_imarray(DosesAndPaths.irrad_film_file)
             self.ui.lineEdit_3.setDisabled(True)
             self.insert_tiff_file()
+        else:
+            DosesAndPaths.irrad_film_file = None
+            self.image_map.clf()
+            self.image_canvas.draw_idle()
 
     def get_empty_field_file(self):
         """
@@ -920,7 +924,7 @@ class CalcUI(QtWidgets.QMainWindow):
     @staticmethod
     def check_fields_bd_mode():
         if DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None \
-                and DosesAndPaths.empty_field_file is not None:
+                and DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_array_original is not None:
             return True
 
 
