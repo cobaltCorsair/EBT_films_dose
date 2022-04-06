@@ -1148,7 +1148,7 @@ class SaveLoadData:
         if len(DosesAndPaths.z) > 0:
             dataframe_array = pandas.DataFrame(DosesAndPaths.z)
 
-            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', 'dose_data.xlsx',
+            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', 'dose_data',
                                                       'Excel Files (*.xlsx);;all files(*.*)',
                                                       options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
@@ -1169,7 +1169,7 @@ class SaveLoadData:
         if len(ax) > 0:
             ax_array = pandas.DataFrame(ax)
 
-            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name + '.xlsx',
+            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name,
                                                       'Excel Files (*.xlsx);;all files(*.*)',
                                                       options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
