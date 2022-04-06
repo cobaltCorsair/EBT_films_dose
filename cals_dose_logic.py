@@ -24,7 +24,7 @@ from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from database import dbProxy as db
 from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant, LogicParser
-from filters import Filters
+from filters import Filters, Filter
 
 plt.switch_backend('agg')
 
@@ -920,13 +920,24 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.get_dpi_value()
         DosesAndPaths.z = list()
-        im_arr_first = CalcUI.choose_orig_or_crop()
+        im_arr_first = self.add_filter(CalcUI.choose_orig_or_crop())
         im_arr_flatt = im_arr_first.flatten()
         parsed_empty_file = empty_file
         z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
         DosesAndPaths.z = (DosesAndPaths.curve_object.evaluateOD(z_object)).reshape(im_arr_first.shape)
         GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
         self.progress_bar_update(100)
+
+    def add_filter(self, image_arr):
+        """
+        Adding a filter to an image
+        :param image_arr: imarray
+        :return:
+        """
+        with_filter = Filter(image_arr)
+        with_filter.setFilter(Filters.__dict__[self.ui.comboBox.currentText()])
+        with_filter.parse()
+        return with_filter.get()
 
     def get_db_and_setting_window(self):
         """
@@ -1071,14 +1082,22 @@ class SaveLoadData:
                 DosesAndPaths.sigma = data['sigma']
                 DosesAndPaths.empty_scanner_field_file = data['empty_scanner_field_file']
 
-                Warnings().error_exist_files([data['empty_scanner_field_file']])
+                # connect the buttons, because the calibration is correct
+                application.ui.pushButton_8.setDisabled(False)
+                application.ui.pushButton_4.setDisabled(False)
 
-        for i in p.values():
+            if not os.path.exists(data['empty_scanner_field_file']):
+                not_exist_files.append(data['empty_scanner_field_file'])
+
+        for i in DosesAndPaths.paths:
             if not os.path.exists(i):
                 not_exist_files.append(i)
 
         if not_exist_files:
             Warnings().error_exist_files(not_exist_files)
+            # disconnect the buttons, because the calibration is incorrect
+            application.ui.pushButton_8.setDisabled(True)
+            application.ui.pushButton_4.setDisabled(True)
 
     @staticmethod
     def save_db_win_setting(facility, lot, hours, dose_limit, od, fit_func, fitting):
@@ -1112,7 +1131,7 @@ class SaveLoadData:
         Save xlsx file
         """
         if len(DosesAndPaths.z) > 0:
-            dataframe_array = pandas.DataFrame(DosesAndPaths.z).T
+            dataframe_array = pandas.DataFrame(DosesAndPaths.z)
 
             filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', 'dose_data.xlsx',
                                                       'JSON files (*.xlsx);;all files(*.*)',
@@ -1308,6 +1327,9 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
         CalcUI.HAND_SWITCH_MODE = False
         self.get_zero_film()
+        # connect the buttons, because the calibration is correct
+        application.ui.pushButton_8.setDisabled(False)
+        application.ui.pushButton_4.setDisabled(False)
 
     def draw_curve_from_db_data(self):
         """
