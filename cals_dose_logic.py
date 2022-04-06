@@ -549,6 +549,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
         self.pushButton.clicked.connect(lambda: self.get_values(slice_values_x, 'X axis'))
+        self.pushButton_2.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_x, 'X axis'))
 
         # y axis
         self.figure_map_y.clf()
@@ -560,6 +561,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
+        self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y, 'Y axis'))
 
     def get_values(self, values, ax_name):
         """
@@ -1139,6 +1141,27 @@ class SaveLoadData:
             if filename is not '':
                 try:
                     dataframe_array.to_excel(excel_writer=filename+'.xlsx')
+                except OSError:
+                    Warnings.error_special_symbols()
+        else:
+            Warnings.error_empty_dose()
+
+    @staticmethod
+    def save_as_excel_file_axis(ax, ax_name):
+        """
+        Save axis as xlsx file
+        :param ax: doses on the axis
+        :param ax_name: axis name
+        """
+        if len(ax) > 0:
+            ax_array = pandas.DataFrame(ax)
+
+            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name+'.xlsx',
+                                                      'JSON files (*.xlsx);;all files(*.*)',
+                                                      options=QFileDialog.DontUseNativeDialog)
+            if filename is not '':
+                try:
+                    ax_array.to_excel(excel_writer=filename+'.xlsx')
                 except OSError:
                     Warnings.error_special_symbols()
         else:
