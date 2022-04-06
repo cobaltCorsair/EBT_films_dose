@@ -3,6 +3,7 @@
 import os
 import sys
 import json
+import ctypes
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas
@@ -646,6 +647,8 @@ class CalcUI(QtWidgets.QMainWindow):
         if CalcUI.connect:
             self.ui.pushButton_2.setDisabled(False)
 
+        IsAdmin.check_admin()
+
     def get_irrad_film_file(self):
         """
         Find and paste the irradiate film file in tiff format
@@ -1022,8 +1025,18 @@ class Warnings:
     @staticmethod
     def error_empty_dose():
         QMessageBox.critical(None, "Data error", "<b>No data</b><br><br>"
-                                            "Need to calculate dose before outputting to file",
+                                                 "Need to calculate dose before outputting to file",
                              QMessageBox.Ok)
+
+    @staticmethod
+    def error_if_is_admin():
+        QMessageBox.information(None, "Warning", "<b>Administrator rights are detected.</b><br><br>"
+                                                 "The program is running with administrator privileges. "
+                                                 "Enabled UAC with default settings does not allow access to mapped "
+                                                 "(via net use) network drives from applications running in privileged "
+                                                 "mode. Please run the program in normal mode, "
+                                                 "or use files (or calibrations) that are not on a network drive.",
+                                QMessageBox.Ok)
 
 
 class SaveLoadData:
@@ -1140,7 +1153,7 @@ class SaveLoadData:
                                                       options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
                 try:
-                    dataframe_array.to_excel(excel_writer=filename+'.xlsx')
+                    dataframe_array.to_excel(excel_writer=filename + '.xlsx')
                 except OSError:
                     Warnings.error_special_symbols()
         else:
@@ -1156,12 +1169,12 @@ class SaveLoadData:
         if len(ax) > 0:
             ax_array = pandas.DataFrame(ax)
 
-            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name+'.xlsx',
+            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name + '.xlsx',
                                                       'JSON files (*.xlsx);;all files(*.*)',
                                                       options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
                 try:
-                    ax_array.to_excel(excel_writer=filename+'.xlsx')
+                    ax_array.to_excel(excel_writer=filename + '.xlsx')
                 except OSError:
                     Warnings.error_special_symbols()
         else:
@@ -1406,6 +1419,19 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
         """
         self.reload_old_setting()
         self.openDialog.emit()
+
+
+class IsAdmin:
+
+    @staticmethod
+    def check_admin():
+        try:
+            is_admin = os.getuid() == 0
+        except AttributeError:
+            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
+
+        if is_admin:
+            Warnings.error_if_is_admin()
 
 
 app = QtWidgets.QApplication([])
