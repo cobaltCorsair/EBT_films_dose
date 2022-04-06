@@ -1422,7 +1422,9 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
 
 
 class IsAdmin:
-
+    """
+    A class for detecting administrator rights
+    """
     @staticmethod
     def check_admin():
         try:
