@@ -10,6 +10,7 @@ import pandas
 import tifffile as tifimage
 import matplotlib.widgets
 from PyQt5.QtCore import pyqtSignal, QThread
+from PyQt5.QtGui import QIcon
 from scipy.optimize import curve_fit
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox, QCheckBox
@@ -1443,6 +1444,8 @@ app = QtWidgets.QApplication([])
 # style GUI
 app.setStyle("Fusion")
 app.processEvents()
+app_icon = QIcon("sources/icon64x64.ico")
+app.setWindowIcon(app_icon)
 application = CalcUI()
 # win title
 application.setWindowTitle("Dose calculator")
