@@ -1,5 +1,6 @@
 # Python 3.7
 # -*- coding: utf-8 -*-
+import importlib
 import os
 import sys
 import json
@@ -1426,6 +1427,7 @@ class IsAdmin:
     """
     A class for detecting administrator rights
     """
+
     @staticmethod
     def check_admin():
         try:
@@ -1437,19 +1439,20 @@ class IsAdmin:
             Warnings.error_if_is_admin()
 
 
-app = QtWidgets.QApplication([])
-# icon
-# ico = QtGui.QIcon('./src/icon.png')
-# app.setWindowIcon(ico)
-# style GUI
-app.setStyle("Fusion")
-app.processEvents()
-app_icon = QIcon("sources/icon64x64.ico")
-app.setWindowIcon(app_icon)
-application = CalcUI()
-# win title
-application.setWindowTitle("Dose calculator")
-# set minimum size
-application.setMinimumSize(1200, 800)
-application.show()
-sys.exit(app.exec())
+if __name__ == "__main__":
+    if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
+        import pyi_splash
+        pyi_splash.close()
+
+    app = QtWidgets.QApplication([])
+    app.setStyle("Fusion")
+    app.processEvents()
+    app_icon = QIcon("sources/icon64x64.ico")
+    app.setWindowIcon(app_icon)
+    application = CalcUI()
+    # win title
+    application.setWindowTitle("Dose calculator")
+    # set minimum size
+    application.setMinimumSize(1200, 800)
+    application.show()
+    sys.exit(app.exec())
