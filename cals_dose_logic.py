@@ -976,7 +976,7 @@ class Warnings:
     """
 
     @staticmethod
-    def error_exist_files(file) -> list:
+    def error_exist_files(file: list):
         """
         :param file: list only
         :return:
@@ -1118,6 +1118,17 @@ class SaveLoadData:
 
     @staticmethod
     def save_db_win_setting(facility, lot, hours, dose_limit, od, fit_func, fitting):
+        """
+        Saving values in the database settings window
+        :param facility: facility name
+        :param lot: lot number
+        :param hours: hours after irradiation
+        :param dose_limit: dose limit
+        :param od: optical density
+        :param fit_func: type of fitting function
+        :param fitting: function
+        :return:
+        """
         SaveLoadData.db_win_setting = {
             'facility_name': facility,
             'lot_number': lot,
@@ -1444,10 +1455,11 @@ if __name__ == "__main__":
         import pyi_splash
         pyi_splash.close()
 
+    basedir = os.path.dirname(__file__)
     app = QtWidgets.QApplication([])
     app.setStyle("Fusion")
     app.processEvents()
-    app_icon = QIcon("sources/icon64x64.ico")
+    app_icon = QIcon(os.path.join(basedir, "icon", "icon64x64.ico"))
     app.setWindowIcon(app_icon)
     application = CalcUI()
     # win title
