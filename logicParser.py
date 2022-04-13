@@ -125,6 +125,8 @@ class LogicParser(object):
             return np.log10(medWhite / PV) - np.log10(medWhite / medUnexp)
         elif self.__dict__['odVariant'] == LogicODVariant.useDummy:
             return np.log10(medUnexp/ PV)
+        else:
+            return np.log10(65535. / PV)
 
     def evaluate(self, value):
         od = self.preparePixValue(value)

@@ -869,6 +869,9 @@ class CalcUI(QtWidgets.QMainWindow):
         Running the calculation in the thread
         """
         self.first_film_from_calibration()
+        if not self.check_fields_bd_mode() and not self.check_fields_manual_mode():
+            self.calc_ODOnly()
+            return
         self.get_vmin_vmax_values()
 
         if self.check_fields_manual_mode() and CalcUI.HAND_SWITCH_MODE:
@@ -932,6 +935,20 @@ class CalcUI(QtWidgets.QMainWindow):
         parsed_empty_file = empty_file
         z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt, parsed_empty_file)
         DosesAndPaths.z = (DosesAndPaths.curve_object.evaluateOD(z_object)).reshape(im_arr_first.shape)
+        GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
+        self.progress_bar_update(100)
+
+    def calc_ODOnly(self, ):
+        """
+        Setting z-data to np.log10(65535./PV) for all data
+        @return: None
+        """
+        self.get_dpi_value()
+        im_arr_first = self.add_filter(CalcUI.choose_orig_or_crop())
+        im_arr_flatt = im_arr_first.flatten()
+        #z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt)
+        z_object = np.log10(65535. / im_arr_flatt)
+        DosesAndPaths.z = z_object.reshape(im_arr_first.shape)
         GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
         self.progress_bar_update(100)
 
