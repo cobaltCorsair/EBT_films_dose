@@ -868,11 +868,17 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Running the calculation in the thread
         """
-        self.first_film_from_calibration()
-        if not self.check_fields_bd_mode() and not self.check_fields_manual_mode():
-            self.calc_ODOnly()
-            return
         self.get_vmin_vmax_values()
+
+        if self.ui.checkBox_3.isChecked():
+            try:
+                self.calc_ODOnly()
+                return
+            except AttributeError:
+                Warnings.error_empty_image()
+                return
+
+        self.first_film_from_calibration()
 
         if self.check_fields_manual_mode() and CalcUI.HAND_SWITCH_MODE:
             # manual mode
@@ -938,11 +944,12 @@ class CalcUI(QtWidgets.QMainWindow):
         GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
         self.progress_bar_update(100)
 
-    def calc_ODOnly(self, ):
+    def calc_ODOnly(self):
         """
         Setting z-data to np.log10(65535./PV) for all data
         @return: None
         """
+        DosesAndPaths.z = []
         self.get_dpi_value()
         im_arr_first = self.add_filter(CalcUI.choose_orig_or_crop())
         im_arr_flatt = im_arr_first.flatten()
@@ -1045,6 +1052,12 @@ class Warnings:
     def error_empty_dose():
         QMessageBox.critical(None, "Data error", "<b>No data</b><br><br>"
                                                  "Need to calculate dose before outputting to file",
+                             QMessageBox.Ok)
+
+    @staticmethod
+    def error_empty_image():
+        QMessageBox.critical(None, "Data error", "<b>No data</b><br><br>"
+                                                 "No unexposed film",
                              QMessageBox.Ok)
 
     @staticmethod
