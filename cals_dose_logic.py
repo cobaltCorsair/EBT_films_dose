@@ -1436,6 +1436,10 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                     )]))).replace('.', ',')))
                 self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
                     '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.calibOds]))).replace('.', ',')))
+                if self.dose_curve_object.getPOpt() is not None:
+                    self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + (
+                        '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.getPOpt()]))).replace('.', ',')))
+            print(LogicParser.__dict__.keys())
             self.value_win.show()
         except ValueError:
             Warnings.error_incorrect_value()
