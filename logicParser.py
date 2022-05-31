@@ -68,6 +68,12 @@ class LogicParser(object):
         self.calibDoses = doses
         self._prepare()
 
+    def getPOpt(self):
+        if hasattr(self, "_popt"):
+            return self._popt
+        else:
+            return None
+
     @staticmethod
     def getMean4FilmByFilename(filename, channel=0):
         '''
