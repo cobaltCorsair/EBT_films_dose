@@ -1,0 +1,10 @@
+backports.statistics==0.1.0
+matplotlib==3.5.2
+numpy==1.22.2
+pandas==1.4.2
+pymongo==4.1.1
+PyQt5==5.15.7
+scikit_learn==1.1.1
+scipy==1.8.0
+tensorflow==2.9.1
+tifffile==2022.5.4
