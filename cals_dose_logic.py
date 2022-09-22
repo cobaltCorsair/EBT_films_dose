@@ -77,7 +77,7 @@ class GraphicsPlotting:
     def draw_curve_from_db(doses, ods, dose_object, figure_graph, canvas_graph):
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Data points", color="red")
+        ax.plot(ods, doses, '*', label="Data points", color="red")
         ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)),
                 label="Fit function", color="black")
         ax.grid(True, linestyle="-.")
