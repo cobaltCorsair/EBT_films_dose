@@ -495,6 +495,48 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         self.closeDialog.emit()
 
 
+class MoveGraphLine:
+    def __init__(self, graf, ax, move_speed=0.5):
+        self.graf = graf
+        self.ax = ax
+        self.figcanvas = self.ax.figure.canvas
+        self.start_point = None
+        self.move_speed = move_speed
+        self.moving = False
+
+        self.figcanvas.mpl_connect('button_press_event', self.mouse_press)
+        self.figcanvas.mpl_connect('button_release_event', self.mouse_release)
+        self.figcanvas.mpl_connect('motion_notify_event', self.mouse_move)
+
+    def mouse_release(self, event):
+        if self.ax.get_navigate_mode() is not None:
+            return
+        self.moving = False
+
+    def mouse_press(self, event):
+        if self.ax.get_navigate_mode() is not None:
+            return
+        if event.inaxes != self.ax:
+            return
+        self.start_point = (event.xdata, event.ydata)
+        self.moving = True
+
+    def mouse_move(self, event):
+        if self.ax.get_navigate_mode() is not None:
+            return
+        if event.inaxes != self.ax:
+            return
+        if not self.moving:
+            return
+
+        shift_x = (self.start_point[0] - event.xdata) * self.move_speed
+        mvdx, mvdy = self.graf.get_data()
+        mvdx -= shift_x
+
+        self.graf.set_data(mvdx, mvdy)
+        self.figcanvas.draw()
+
+
 class AxesWindow(QtWidgets.QWidget, Axes_form):
     """
     Class for drawing graphs on the X and Y axes
@@ -528,11 +570,11 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         if DosesAndPaths.vmax is not None and DosesAndPaths.vmin is not None:
             slice_clipped = np.clip(slice, DosesAndPaths.vmin, DosesAndPaths.vmax)
-            ax.plot(slice_clipped)
-            return slice_clipped
+            graf, = ax.plot(slice_clipped)
+            return graf, slice_clipped
         else:
-            ax.plot(slice)
-            return slice
+            graf, = ax.plot(slice)
+            return graf, slice
 
     def draw_graphics(self, slice_x, slice_y):
         """
@@ -546,7 +588,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
-        slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
+        graf_x, slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
         ax_x.xaxis.set_major_formatter(formatter)
         ax_x.set_xlabel('mm')
         ax_x.set_ylabel('Absorbed dose, Gy')
@@ -554,17 +596,23 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.pushButton.clicked.connect(lambda: self.get_values(slice_values_x, 'X axis'))
         self.pushButton_2.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_x, 'X axis'))
 
+        # Add a function to move the X diagram along the X axis
+        self.moveline_x_x = MoveGraphLine(graf_x, ax_x, move_speed=0.1)
+
         # y axis
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
-        slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
+        graf_y, slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
         ax_y.xaxis.set_major_formatter(formatter)
         ax_y.set_xlabel('mm')
         ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
         self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y, 'Y axis'))
+
+        # Add a function to move the Y diagram along the X axis
+        self.moveline_x_y = MoveGraphLine(graf_y, ax_y, move_speed=0.1)
 
     def get_values(self, values, ax_name):
         """
@@ -587,7 +635,6 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         plt.close(self.figure_map_x)
         plt.close(self.figure_map_y)
         self.closeDialog.emit()
-
 
 class CalcUI(QtWidgets.QMainWindow):
     """
