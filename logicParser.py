@@ -51,7 +51,7 @@ class LogicParser(object):
         self.__dict__['odVariant'] = odVariant
         self.__dict__['curveVariant'] = curveVariant
         if curveVariant == LogicCurveVariants.useCurveFit:
-            self.__dict__['fitFunc'] = kwargs.get('curveFitVariant', LogicCurveFitsVariant.usePol5)
+            self.__dict__['fitFunc'] = kwargs.get('fitFunc', LogicCurveFitsVariant.usePol5)
 
 
         ods = []
@@ -104,6 +104,7 @@ class LogicParser(object):
                 self._popt, self._pcov = curve_fit(fitFuncPol4, self.calibOds, self.calibDoses)
             elif self.__dict__['fitFunc'] == LogicCurveFitsVariant.usePol5:
                 self._popt, self._pcov = curve_fit(fitFuncPol5, self.calibOds, self.calibDoses)
+            print(self._popt)
         elif self.__dict__['curveVariant'] == LogicCurveVariants.useInterp1d:
             self.interp = interp1d(self.calibOds, self.calibDoses)
             print(self.interp(self.calibOds))

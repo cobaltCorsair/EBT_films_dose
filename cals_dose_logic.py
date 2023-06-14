@@ -77,7 +77,7 @@ class GraphicsPlotting:
     def draw_curve_from_db(doses, ods, dose_object, figure_graph, canvas_graph):
         figure_graph.clf()
         ax = figure_graph.add_subplot(111)
-        ax.plot(ods, dose_object.evaluateOD(ods), '*', label="Data points", color="red")
+        ax.plot(ods, doses, '*', label="Data points", color="red")
         ax.plot(np.linspace(ods[0], ods[-1], 500), dose_object.evaluateOD(np.linspace(ods[0], ods[-1], 500)),
                 label="Fit function", color="black")
         ax.grid(True, linestyle="-.")
@@ -495,6 +495,63 @@ class CurveWindow(QtWidgets.QWidget, Curve_form):
         self.closeDialog.emit()
 
 
+class MoveGraphLine(QtWidgets.QWidget):
+    """
+    Adds functionality to move graphs along the X-axis.
+    """
+    dataChanged = pyqtSignal(np.ndarray, np.ndarray)
+
+    def __init__(self, graf, ax, move_speed=0.5):
+        QtWidgets.QWidget.__init__(self)
+        self.graf = graf  # The graph to be moved
+        self.ax = ax  # The axes object of the graph
+        self.figcanvas = self.ax.figure.canvas  # The canvas of the figure
+        self.start_point = None  # The starting point of the mouse drag
+        self.move_speed = move_speed  # The speed of the graph movement
+        self.moving = False  # Flag indicating whether the graph is moving or not
+
+        # Connect the mouse events to their respective handlers
+        self.figcanvas.mpl_connect('button_press_event', self.mouse_press)
+        self.figcanvas.mpl_connect('button_release_event', self.mouse_release)
+        self.figcanvas.mpl_connect('motion_notify_event', self.mouse_move)
+
+    def mouse_release(self, event):
+        # Check if a navigation tool is active, if so, do nothing
+        if self.ax.get_navigate_mode() is not None:
+            return
+        self.moving = False
+
+    def mouse_press(self, event):
+        # Check if a navigation tool is active, if so, do nothing
+        if self.ax.get_navigate_mode() is not None:
+            return
+        if event.inaxes != self.ax:
+            return
+        self.start_point = (event.xdata, event.ydata)
+        self.moving = True
+
+    def mouse_move(self, event):
+        # Check if a navigation tool is active, if so, do nothing
+        if self.ax.get_navigate_mode() is not None:
+            return
+        if event.inaxes != self.ax:
+            return
+        if not self.moving:
+            return
+
+        # Calculate the shift in the x-axis based on the mouse movement
+        shift_x = (self.start_point[0] - event.xdata) * self.move_speed
+        mvdx, mvdy = self.graf.get_data()  # Get the current graph data
+        mvdx -= shift_x  # Update the x-axis data by applying the shift
+
+        # Update the graph with the new data and redraw the canvas
+        self.graf.set_data(mvdx, mvdy)
+        self.figcanvas.draw()
+
+        # Emit the dataChanged signal with the updated data
+        self.dataChanged.emit(mvdx, mvdy)
+
+
 class AxesWindow(QtWidgets.QWidget, Axes_form):
     """
     Class for drawing graphs on the X and Y axes
@@ -518,6 +575,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.toolbar_y = NavigationToolbar(self.canvas_map_y, self)
         self.verticalLayout_5.addWidget(self.toolbar_y)
 
+        self.formatted_mvdx = None
+
     @staticmethod
     def dose_limits_for_graph(slice, ax):
         """
@@ -528,11 +587,11 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         """
         if DosesAndPaths.vmax is not None and DosesAndPaths.vmin is not None:
             slice_clipped = np.clip(slice, DosesAndPaths.vmin, DosesAndPaths.vmax)
-            ax.plot(slice_clipped)
-            return slice_clipped
+            graf, = ax.plot(slice_clipped)
+            return graf, slice_clipped
         else:
-            ax.plot(slice)
-            return slice
+            graf, = ax.plot(slice)
+            return graf, slice
 
     def draw_graphics(self, slice_x, slice_y):
         """
@@ -546,25 +605,35 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.figure_map_x.clf()
         ax_x = self.figure_map_x.add_subplot(111)
         ax_x.grid(True, linestyle="-.")
-        slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
+        graf_x, slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
         ax_x.xaxis.set_major_formatter(formatter)
         ax_x.set_xlabel('mm')
         ax_x.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_x.draw()
         self.pushButton.clicked.connect(lambda: self.get_values(slice_values_x, 'X axis'))
-        self.pushButton_2.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_x, 'X axis'))
+        self.pushButton_2.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_x,
+                                                                                       'X axis', self.formatted_mvdx))
+
+        # Add a function to move the X diagram along the X axis
+        self.moveline_x_x = MoveGraphLine(graf_x, ax_x, move_speed=0.1)
+        self.moveline_x_x.dataChanged.connect(self.handle_data_changed)
 
         # y axis
         self.figure_map_y.clf()
         ax_y = self.figure_map_y.add_subplot(111)
         ax_y.grid(True, linestyle="-.")
-        slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
+        graf_y, slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
         ax_y.xaxis.set_major_formatter(formatter)
         ax_y.set_xlabel('mm')
         ax_y.set_ylabel('Absorbed dose, Gy')
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
-        self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y, 'Y axis'))
+        self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y,
+                                                                                       'Y axis', self.formatted_mvdx))
+
+        # Add a function to move the Y diagram along the X axis
+        self.moveline_x_y = MoveGraphLine(graf_y, ax_y, move_speed=0.1)
+        self.moveline_x_y.dataChanged.connect(self.handle_data_changed)
 
     def get_values(self, values, ax_name):
         """
@@ -587,6 +656,15 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         plt.close(self.figure_map_x)
         plt.close(self.figure_map_y)
         self.closeDialog.emit()
+
+    def handle_data_changed(self, mvdx, mvdy):
+        # Multiply the raw x-axis data (mvdx) by the basis
+        # formatter to convert the values to the desired scale
+        formatted_mvdx = mvdx * DosesAndPaths.basis_formatter
+
+        # Round the formatted x-axis data to 0 decimal
+        # places and store it as an attribute of the class
+        self.formatted_mvdx = formatted_mvdx.round(2)
 
 
 class CalcUI(QtWidgets.QMainWindow):
@@ -953,7 +1031,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.get_dpi_value()
         im_arr_first = self.add_filter(CalcUI.choose_orig_or_crop())
         im_arr_flatt = im_arr_first.flatten()
-        #z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt)
+        # z_object = DosesAndPaths.curve_object.preparePixValue(im_arr_flatt)
         z_object = np.log10(65535. / im_arr_flatt)
         DosesAndPaths.z = z_object.reshape(im_arr_first.shape)
         GraphicsPlotting.draw_dose_map(DosesAndPaths.z)
@@ -1203,21 +1281,26 @@ class SaveLoadData:
             Warnings.error_empty_dose()
 
     @staticmethod
-    def save_as_excel_file_axis(ax, ax_name):
+    def save_as_excel_file_axis(ax, ax_name, formatted_mvdx):
         """
         Save axis as xlsx file
         :param ax: doses on the axis
         :param ax_name: axis name
+        :param formatted_mvdx: formatted x-axis data
         """
         if len(ax) > 0:
-            ax_array = pandas.DataFrame(ax)
+            if formatted_mvdx is not None:
+                ax_data = {'X': formatted_mvdx, 'Y': ax}
+                ax_dataframe = pandas.DataFrame(ax_data)
+            else:
+                ax_dataframe = pandas.DataFrame(ax)
 
             filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name,
                                                       'Excel Files (*.xlsx);;all files(*.*)',
                                                       options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
                 try:
-                    ax_array.to_excel(excel_writer=filename + '.xlsx')
+                    ax_dataframe.to_excel(excel_writer=filename + '.xlsx')
                 except OSError:
                     Warnings.error_special_symbols()
         else:
@@ -1436,6 +1519,11 @@ class DatabaseAndSettings(QtWidgets.QWidget, DB_form):
                     )]))).replace('.', ',')))
                 self.value_win.plainTextEdit.appendPlainText(('\nOPTICAL DENSITY: \n' + (
                     '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.calibOds]))).replace('.', ',')))
+                if self.dose_curve_object.getPOpt() is not None:
+                    self.value_win.plainTextEdit.appendPlainText(('\nPOLY_COEF_A_B_C: \n' + (
+                        '\n'.join(map(str, [round(x, 4) for x in self.dose_curve_object.getPOpt()]))).replace('.',
+                                                                                                              ',')))
+            print(LogicParser.__dict__.keys())
             self.value_win.show()
         except ValueError:
             Warnings.error_incorrect_value()
@@ -1483,6 +1571,7 @@ class IsAdmin:
 if __name__ == "__main__":
     if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
         import pyi_splash
+
         pyi_splash.close()
 
     basedir = os.path.dirname(__file__)
