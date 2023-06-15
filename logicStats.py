@@ -22,3 +22,14 @@ def vmax(x):
 def vmin(x):
     return np.min(x)
 
+
+def prepareGauss(x, p0 = [1., 0., 1.]):
+    hist, edges = np.histogram(x, density=True)
+    centres = (edges[:-1] + edges[1:]) / 2
+
+    cfs, variation = curve_fit(gauss, centres, hist, p0=p0)
+    errs = np.sqrt(np.diag(variation))
+
+    #hist_fit = gauss(centres, *cfs)
+
+    return (cfs, errs, )
