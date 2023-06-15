@@ -11,7 +11,7 @@ class MyTestCase(unittest.TestCase):
         # fitting the function and obtaining it's error
         gs, err = logicStats.prepareGauss(data)
         # checking whether obtained value of mu at gs[1] is within 3 sigma (err[1]) from original loc
-        self.assertTrue(gs[1] - 3*err[1] <= loc <= gs[1] + 3*err[1])
+        self.assertAlmostEqual(loc, gs[1], delta=3*err[1])
 
     def test_funcCall(self):
         loc = 0.0
@@ -19,7 +19,7 @@ class MyTestCase(unittest.TestCase):
         gs, err = logicStats.prepareGauss(data)
 
         dte = logicStats.gauss(0.0, *gs)
-        self.assertTrue(gs[0] - 3*err[0] <= dte <= gs[0] + 3*err[0])
+        self.assertAlmostEqual(dte, gs[0], delta=3*err[0])
 
 
 if __name__ == '__main__':
