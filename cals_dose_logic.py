@@ -28,6 +28,7 @@ from database import db_connection
 from database import dbProxy as db
 from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant, LogicParser
 from filters import Filters, Filter
+from stats import stats_ui, logicStats
 
 plt.switch_backend('agg')
 
@@ -1566,6 +1567,14 @@ class IsAdmin:
 
         if is_admin:
             Warnings.error_if_is_admin()
+
+
+class GraphsStatistics:
+    """
+    Print stats on the left/right windows
+    """
+    def __init__(self):
+        pass
 
 
 if __name__ == "__main__":
