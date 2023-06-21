@@ -6,6 +6,7 @@ class PanelWindow(QWidget):
     def __init__(self):
         super(PanelWindow, self).__init__()
         self.setFixedWidth(200)  # Set the width of the panel
+        self.setFixedHeight(350)
         self.setStyleSheet("background-color: #f0f0f0;")  # Just to distinguish the panel
 
         self.tree = QTreeWidget(self)
@@ -76,22 +77,23 @@ class PanelWindow(QWidget):
 
 
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, button, position='right'):
         super(MainWindow, self).__init__()
 
-        self.button = QPushButton(">>", self)
+        self.button = button
         self.button.clicked.connect(self.togglePanel)
 
         self.panel = PanelWindow()
-
-        self.layout = QHBoxLayout(self)
-        self.layout.addWidget(self.button)
-
         self.panel.hide()
+
+        self.position = position
 
     def togglePanel(self):
         if self.panel.isHidden():
-            self.panel.move(self.frameGeometry().topRight())  # Move the panel to the right of the main window
+            if self.position == 'right':
+                self.panel.move(self.button.mapToGlobal(self.button.rect().topRight()))  # Move the panel to the right of the button
+            else:
+                self.panel.move(self.button.mapToGlobal(self.button.rect().topLeft()) - self.panel.rect().topRight())  # Move the panel to the left of the button
             self.panel.show()
             self.button.setText("<<")
         else:
@@ -99,7 +101,8 @@ class MainWindow(QWidget):
             self.button.setText(">>")
 
 
-app = QApplication([])
-window = MainWindow()
-window.show()
-app.exec_()
+if __name__ == '__main__':
+    app = QApplication([])
+    window = MainWindow()
+    window.show()
+    app.exec_()

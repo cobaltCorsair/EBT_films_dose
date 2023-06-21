@@ -578,6 +578,14 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
 
         self.formatted_mvdx = None
 
+        # Stats buttons
+        self.pushButton_5.clicked.connect(self.on_button_left_clicked)
+        self.pushButton_6.clicked.connect(self.on_button_right_clicked)
+
+        # Stats windows
+        self.stats_left = None
+        self.stats_right = None
+
     @staticmethod
     def dose_limits_for_graph(slice, ax):
         """
@@ -666,6 +674,14 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         # Round the formatted x-axis data to 0 decimal
         # places and store it as an attribute of the class
         self.formatted_mvdx = formatted_mvdx.round(2)
+
+    def on_button_left_clicked(self):
+        self.stats_left = stats_ui.MainWindow(self.pushButton_5, position='left')
+        self.stats_left.togglePanel()
+
+    def on_button_right_clicked(self):
+        self.stats_right = stats_ui.MainWindow(self.pushButton_6, position='right')
+        self.stats_right.togglePanel()
 
 
 class CalcUI(QtWidgets.QMainWindow):
