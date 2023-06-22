@@ -1306,7 +1306,7 @@ class SaveLoadData:
         :param formatted_mvdx: formatted x-axis data
         """
         if len(ax) > 0:
-            if formatted_mvdx is not None:
+            if formatted_mvdx is not None and len(formatted_mvdx) == len(ax):
                 ax_data = {'X': formatted_mvdx, 'Y': ax}
                 ax_dataframe = pandas.DataFrame(ax_data)
             else:
