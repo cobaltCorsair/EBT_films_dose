@@ -79,26 +79,23 @@ class PanelWindow(QWidget):
 class MainWindow(QWidget):
     def __init__(self, button, position='right'):
         super(MainWindow, self).__init__()
-
-        self.button = button
-        self.button.clicked.connect(self.togglePanel)
-
         self.panel = PanelWindow()
+        self.panel.setWindowTitle("Stats " + ('Y' if position == 'right' else 'X'))
         self.panel.hide()
 
+        self.button = button
         self.position = position
 
-    def togglePanel(self):
-        if self.panel.isHidden():
-            if self.position == 'right':
-                self.panel.move(self.button.mapToGlobal(self.button.rect().topRight()))  # Move the panel to the right of the button
-            else:
-                self.panel.move(self.button.mapToGlobal(self.button.rect().topLeft()) - self.panel.rect().topRight())  # Move the panel to the left of the button
-            self.panel.show()
-            self.button.setText("<<")
+    def show_panel(self):
+        # Move the panel to the right of the button
+        if self.position == 'right':
+            self.panel.move(
+                self.button.mapToGlobal(self.button.rect().topRight()))
         else:
-            self.panel.hide()
-            self.button.setText(">>")
+            # Move the panel to the left of the button
+            self.panel.move(self.button.mapToGlobal(
+                self.button.rect().topLeft()) - self.panel.rect().topRight())
+        self.panel.show()
 
 
 if __name__ == '__main__':

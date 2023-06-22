@@ -578,13 +578,13 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
 
         self.formatted_mvdx = None
 
+        # Stats windows
+        self.stats_left = stats_ui.MainWindow(self.pushButton_5, position='left')
+        self.stats_right = stats_ui.MainWindow(self.pushButton_6, position='right')
+
         # Stats buttons
         self.pushButton_5.clicked.connect(self.on_button_left_clicked)
         self.pushButton_6.clicked.connect(self.on_button_right_clicked)
-
-        # Stats windows
-        self.stats_left = None
-        self.stats_right = None
 
     @staticmethod
     def dose_limits_for_graph(slice, ax):
@@ -676,12 +676,12 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.formatted_mvdx = formatted_mvdx.round(2)
 
     def on_button_left_clicked(self):
-        self.stats_left = stats_ui.MainWindow(self.pushButton_5, position='left')
-        self.stats_left.togglePanel()
+        # Show panel with stats on X
+        self.stats_left.show_panel()
 
     def on_button_right_clicked(self):
-        self.stats_right = stats_ui.MainWindow(self.pushButton_6, position='right')
-        self.stats_right.togglePanel()
+        # Show panel with stats on Y
+        self.stats_right.show_panel()
 
 
 class CalcUI(QtWidgets.QMainWindow):
