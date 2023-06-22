@@ -22,5 +22,10 @@ class MyTestCase(unittest.TestCase):
         self.assertAlmostEqual(dte, gs[0], delta=3*err[0])
 
 
+    def test_polyfit1(self):
+        #data = np.random.normal(size=10000, loc=0.0, scale=1.)
+        #print(data)
+        pass
+
 if __name__ == '__main__':
     unittest.main()

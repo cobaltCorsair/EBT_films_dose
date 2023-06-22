@@ -33,3 +33,12 @@ def prepareGauss(x, p0 = [1., 0., 1.]):
     #hist_fit = gauss(centres, *cfs)
 
     return (cfs, errs, )
+
+
+def polyFit(x, y, order=3):
+    return np.polyfit(x, y, order)
+
+
+def preparePolyFit(x, y, order=3):
+    z = polyFit(x, y, order)
+    return np.poly1d(z)
