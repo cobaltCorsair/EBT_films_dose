@@ -26,9 +26,10 @@ from Values import Ui_Form as Values_form
 from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from database import dbProxy as db
+from doses_and_pathes import DosesAndPaths
 from logicParser import LogicODVariant, LogicCurveVariants, LogicCurveFitsVariant, LogicParser
 from filters import Filters, Filter
-from stats import stats_ui, logicStats
+from stats import stats_ui
 
 plt.switch_backend('agg')
 
@@ -245,30 +246,6 @@ class Dose(QThread):
             GraphicsPlotting().draw_dose_map(DosesAndPaths.z)
         except ValueError:
             print('No files found')
-
-
-class DosesAndPaths:
-    """
-    Data-class
-    """
-    empty_field_file = None
-    empty_scanner_field_file = None
-    irrad_film_file = None
-    calculation_doses = list()
-    red_channel_blank = None
-    p_opt = None
-    doses = list()
-    paths = list()
-    sigma = 0
-    z = list()
-    basis_formatter = 0.17
-    curve_object = None
-    zero_from_db = None
-    vmin = None
-    vmax = None
-    fit_func_type = None
-    irrad_film_array = None
-    irrad_film_array_original = None
 
 
 class Form(QtWidgets.QWidget, Ui_Form):
@@ -639,10 +616,17 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
         self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y,
                                                                                        'Y axis', self.formatted_mvdx))
-
         # Add a function to move the Y diagram along the X axis
         self.moveline_x_y = MoveGraphLine(graf_y, ax_y, move_speed=0.1)
         self.moveline_x_y.dataChanged.connect(self.handle_data_changed)
+
+        # Save ours data in dataclass
+        self.get_final_params_for_stats(slice_values_x, slice_values_y)
+
+    def get_final_params_for_stats(self, slice_values_x, slice_values_y):
+        # Function for save parameters in dataclass
+        DosesAndPaths.final_slice_values_x = slice_values_x
+        DosesAndPaths.final_slice_values_y = slice_values_y
 
     def get_values(self, values, ax_name):
         """
@@ -674,6 +658,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         # Round the formatted x-axis data to 0 decimal
         # places and store it as an attribute of the class
         self.formatted_mvdx = formatted_mvdx.round(2)
+        DosesAndPaths.final_formatted_mvdx = self.formatted_mvdx
 
     def on_button_left_clicked(self):
         # Show panel with stats on X

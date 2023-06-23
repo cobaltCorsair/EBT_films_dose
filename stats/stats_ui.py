@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt
+from doses_and_pathes import DosesAndPaths
 
 
 class PanelWindow(QWidget):
@@ -60,6 +61,7 @@ class PanelWindow(QWidget):
             self.cf_items.append(cf_item)
 
         self.tree.itemChanged.connect(self.handleItemChanged)
+        self.tree.itemChanged.connect(self.on_item_changed)
 
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.tree)
@@ -74,6 +76,14 @@ class PanelWindow(QWidget):
             elif item == self.poly_item:
                 for cf_item in self.cf_items:
                     cf_item.setHidden(hidden)
+
+    def on_item_changed(self, item, column):
+        if item == self.gauss_item and column == 0:
+            if item.checkState(0) == Qt.Checked:
+                print('check')
+                print(DosesAndPaths.final_slice_values_x)
+            else:
+                print('uncheck')
 
 
 class MainWindow(QWidget):
