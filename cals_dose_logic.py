@@ -553,7 +553,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.toolbar_y = NavigationToolbar(self.canvas_map_y, self)
         self.verticalLayout_5.addWidget(self.toolbar_y)
 
-        self.formatted_mvdx = None
+        self.formatted_mvdx_x = None
+        self.formatted_mvdx_y = None
 
         # Stats windows
         self.stats_left = stats_ui.MainWindow(self.pushButton_5, position='left')
@@ -598,11 +599,11 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.canvas_map_x.draw()
         self.pushButton.clicked.connect(lambda: self.get_values(slice_values_x, 'X axis'))
         self.pushButton_2.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_x,
-                                                                                       'X axis', self.formatted_mvdx))
+                                                                                       'X axis', self.formatted_mvdx_x))
 
         # Add a function to move the X diagram along the X axis
         self.moveline_x_x = MoveGraphLine(graf_x, ax_x, move_speed=0.1)
-        self.moveline_x_x.dataChanged.connect(self.handle_data_changed)
+        self.moveline_x_x.dataChanged.connect(self.handle_data_changed_x_x)
 
         # y axis
         self.figure_map_y.clf()
@@ -615,10 +616,10 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.canvas_map_y.draw()
         self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
         self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y,
-                                                                                       'Y axis', self.formatted_mvdx))
+                                                                                       'Y axis', self.formatted_mvdx_y))
         # Add a function to move the Y diagram along the X axis
         self.moveline_x_y = MoveGraphLine(graf_y, ax_y, move_speed=0.1)
-        self.moveline_x_y.dataChanged.connect(self.handle_data_changed)
+        self.moveline_x_y.dataChanged.connect(self.handle_data_changed_x_y)
 
         # Save ours data in dataclass
         self.get_final_params_for_stats(slice_values_x, slice_values_y)
@@ -650,15 +651,25 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         plt.close(self.figure_map_y)
         self.closeDialog.emit()
 
-    def handle_data_changed(self, mvdx, mvdy):
+    def handle_data_changed_x_x(self, mvdx, mvdy):
         # Multiply the raw x-axis data (mvdx) by the basis
         # formatter to convert the values to the desired scale
         formatted_mvdx = mvdx * DosesAndPaths.basis_formatter
 
         # Round the formatted x-axis data to 0 decimal
         # places and store it as an attribute of the class
-        self.formatted_mvdx = formatted_mvdx.round(2)
-        DosesAndPaths.final_formatted_mvdx = self.formatted_mvdx
+        self.formatted_mvdx_x = formatted_mvdx.round(2)
+        DosesAndPaths.final_formatted_mvdx_x = self.formatted_mvdx_x
+
+    def handle_data_changed_x_y(self, mvdx, mvdy):
+        # Multiply the raw x-axis data (mvdx) by the basis
+        # formatter to convert the values to the desired scale
+        formatted_mvdx = mvdx * DosesAndPaths.basis_formatter
+
+        # Round the formatted x-axis data to 0 decimal
+        # places and store it as an attribute of the class
+        self.formatted_mvdx_y = formatted_mvdx.round(2)
+        DosesAndPaths.final_formatted_mvdx_y = self.formatted_mvdx_y
 
     def on_button_left_clicked(self):
         # Show panel with stats on X

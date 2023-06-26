@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem
 from PyQt5.QtCore import Qt
 from doses_and_pathes import DosesAndPaths
+from stats import logicStats
 
 
 class PanelWindow(QWidget):
@@ -81,7 +82,12 @@ class PanelWindow(QWidget):
         if item == self.gauss_item and column == 0:
             if item.checkState(0) == Qt.Checked:
                 print('check')
-                print(DosesAndPaths.final_slice_values_x)
+                if DosesAndPaths.final_formatted_mvdx_x is not None:
+                    print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_x,
+                                                DosesAndPaths.final_slice_values_x))
+                    # TODO: необходимо дописать разделение на правый и левый хендлер
+                    # logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_y,
+                    #                             DosesAndPaths.final_slice_values_y)
             else:
                 print('uncheck')
 

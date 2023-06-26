@@ -22,4 +22,5 @@ class DosesAndPaths:
     irrad_film_array_original = None
     final_slice_values_x = None
     final_slice_values_y = None
-    final_formatted_mvdx = None
+    final_formatted_mvdx_x = None
+    final_formatted_mvdx_y = None
