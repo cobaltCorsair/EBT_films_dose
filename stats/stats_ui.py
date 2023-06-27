@@ -5,7 +5,7 @@ from stats import logicStats
 
 
 class PanelWindow(QWidget):
-    def __init__(self):
+    def __init__(self, main_window):
         super(PanelWindow, self).__init__()
         self.setFixedWidth(200)  # Set the width of the panel
         self.setFixedHeight(350)
@@ -67,6 +67,8 @@ class PanelWindow(QWidget):
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.tree)
 
+        self.main_window = main_window
+
     def handleItemChanged(self, item, column):
         if column == 0:
             hidden = item.checkState(0) == Qt.Unchecked
@@ -82,12 +84,12 @@ class PanelWindow(QWidget):
         if item == self.gauss_item and column == 0:
             if item.checkState(0) == Qt.Checked:
                 print('check')
-                if DosesAndPaths.final_formatted_mvdx_x is not None:
+                if DosesAndPaths.final_formatted_mvdx_x is not None and self.main_window.position == 'left':
                     print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_x,
-                                                DosesAndPaths.final_slice_values_x))
-                    # TODO: необходимо дописать разделение на правый и левый хендлер
-                    # logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_y,
-                    #                             DosesAndPaths.final_slice_values_y)
+                                                      DosesAndPaths.final_slice_values_x))
+                if DosesAndPaths.final_formatted_mvdx_y is not None and self.main_window.position == 'right':
+                    print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_y,
+                                                      DosesAndPaths.final_slice_values_y))
             else:
                 print('uncheck')
 
@@ -95,7 +97,7 @@ class PanelWindow(QWidget):
 class MainWindow(QWidget):
     def __init__(self, button, position='right'):
         super(MainWindow, self).__init__()
-        self.panel = PanelWindow()
+        self.panel = PanelWindow(self)
         self.panel.setWindowTitle("Stats " + ('Y' if position == 'right' else 'X'))
         self.panel.hide()
 
