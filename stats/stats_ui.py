@@ -5,7 +5,7 @@ from stats import logicStats
 
 
 class PanelWindow(QWidget):
-    def __init__(self, main_window):
+    def __init__(self, main_window, axes_window):
         super(PanelWindow, self).__init__()
         self.setFixedWidth(200)  # Set the width of the panel
         self.setFixedHeight(350)
@@ -68,6 +68,8 @@ class PanelWindow(QWidget):
         self.layout.addWidget(self.tree)
 
         self.main_window = main_window
+        self.axes_window = axes_window
+        self.axes_window.dataChanged.connect(self.handle_data_changed)
 
     def handleItemChanged(self, item, column):
         if column == 0:
@@ -90,14 +92,20 @@ class PanelWindow(QWidget):
                 if DosesAndPaths.final_formatted_mvdx_y is not None and self.main_window.position == 'right':
                     print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_y,
                                                       DosesAndPaths.final_slice_values_y))
+                # If it is, handle graph movement and print the new values
+                self.handle_data_changed()
             else:
                 print('uncheck')
 
+    def handle_data_changed(self):
+        print(f"Changed X data: {self.axes_window.formatted_mvdx_x}")
+        print(f"Changed Y data: {self.axes_window.formatted_mvdx_y}")
+
 
 class MainWindow(QWidget):
-    def __init__(self, button, position='right'):
+    def __init__(self, button, axes_window, position='right'):
         super(MainWindow, self).__init__()
-        self.panel = PanelWindow(self)
+        self.panel = PanelWindow(self, axes_window=axes_window)
         self.panel.setWindowTitle("Stats " + ('Y' if position == 'right' else 'X'))
         self.panel.hide()
 
