@@ -565,6 +565,9 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         self.pushButton_5.clicked.connect(self.on_button_left_clicked)
         self.pushButton_6.clicked.connect(self.on_button_right_clicked)
 
+        self.ax_x = None
+        self.ax_y = None
+
     @staticmethod
     def dose_limits_for_graph(slice, ax):
         """
@@ -591,7 +594,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
 
         # x axis
         self.figure_map_x.clf()
-        ax_x = self.figure_map_x.add_subplot(111)
+        self.ax_x = self.figure_map_x.add_subplot(111)
+        ax_x = self.ax_x
         ax_x.grid(True, linestyle="-.")
         graf_x, slice_values_x = AxesWindow.dose_limits_for_graph(slice_x, ax_x)
         ax_x.xaxis.set_major_formatter(formatter)
@@ -608,7 +612,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
 
         # y axis
         self.figure_map_y.clf()
-        ax_y = self.figure_map_y.add_subplot(111)
+        self.ax_y = self.figure_map_y.add_subplot(111)
+        ax_y = self.ax_y
         ax_y.grid(True, linestyle="-.")
         graf_y, slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
         ax_y.xaxis.set_major_formatter(formatter)

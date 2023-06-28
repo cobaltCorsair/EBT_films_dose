@@ -71,6 +71,10 @@ class PanelWindow(QWidget):
         self.axes_window = axes_window
         self.axes_window.dataChanged.connect(self.handle_data_changed)
 
+        # Initialize lines to None
+        self.line_x = None
+        self.line_y = None
+
     def handleItemChanged(self, item, column):
         if column == 0:
             hidden = item.checkState(0) == Qt.Unchecked
@@ -86,13 +90,8 @@ class PanelWindow(QWidget):
         if item == self.gauss_item and column == 0:
             if item.checkState(0) == Qt.Checked:
                 print('check')
-                if DosesAndPaths.final_formatted_mvdx_x is not None and self.main_window.position == 'left':
-                    print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_x,
-                                                      DosesAndPaths.final_slice_values_x))
-                if DosesAndPaths.final_formatted_mvdx_y is not None and self.main_window.position == 'right':
-                    print(logicStats.prepareGaussOwnX(DosesAndPaths.final_formatted_mvdx_y,
-                                                      DosesAndPaths.final_slice_values_y))
                 # If it is, handle graph movement and print the new values
+                # TODO: Нужна проверка на то, какой именно чекбокс нажат, потому что сейчас возникает проблема
                 self.handle_data_changed()
             else:
                 print('uncheck')
@@ -100,6 +99,41 @@ class PanelWindow(QWidget):
     def handle_data_changed(self):
         print(f"Changed X data: {self.axes_window.formatted_mvdx_x}")
         print(f"Changed Y data: {self.axes_window.formatted_mvdx_y}")
+
+        if self.axes_window.formatted_mvdx_x is not None and self.main_window.position == 'left':
+            cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
+                                                    DosesAndPaths.final_slice_values_x)
+            # Call plot_additional_data with your data and the corresponding axes
+            self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
+
+        if self.axes_window.formatted_mvdx_y is not None and self.main_window.position == 'right':
+            cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
+                                                    DosesAndPaths.final_slice_values_y)
+            # Call plot_additional_data with your data and the corresponding axes
+            self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
+
+    def plot_additional_data(self, ax, x_data, cfs, color='r'):
+        """
+        Plot additional data on the given axes
+        :param ax: axes object where the data will be plotted
+        :param x_data: x values of the data to plot
+        :param cfs: y values of the data to plot
+        :param color: color of the line to plot
+        """
+        # Check if line exists and update data
+        if self.line_x is not None and ax == self.axes_window.ax_x:
+            self.line_x.set_xdata(x_data)
+            self.line_x.set_ydata(logicStats.gauss(x_data, *cfs))
+        elif self.line_y is not None and ax == self.axes_window.ax_y:
+            self.line_y.set_xdata(x_data)
+            self.line_y.set_ydata(logicStats.gauss(x_data, *cfs))
+        else:  # Line does not exist, create it
+            if ax == self.axes_window.ax_x:
+                self.line_x, = ax.plot(x_data, logicStats.gauss(x_data, *cfs), color=color)
+            elif ax == self.axes_window.ax_y:
+                self.line_y, = ax.plot(x_data, logicStats.gauss(x_data, *cfs), color=color)
+
+        ax.figure.canvas.draw()
 
 
 class MainWindow(QWidget):
