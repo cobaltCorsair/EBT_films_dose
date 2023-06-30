@@ -535,7 +535,8 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
     Class for drawing graphs on the X and Y axes
     """
     closeDialog = pyqtSignal()
-    dataChanged = pyqtSignal()
+    dataChangedLeft = pyqtSignal(str)
+    dataChangedRight = pyqtSignal(str)
 
     def __init__(self, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -666,7 +667,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         # places and store it as an attribute of the class
         self.formatted_mvdx_x = formatted_mvdx.round(2)
         DosesAndPaths.final_formatted_mvdx_x = self.formatted_mvdx_x
-        self.dataChanged.emit()
+        self.dataChangedLeft.emit('left')
 
     def handle_data_changed_x_y(self, mvdx, mvdy):
         # Multiply the raw x-axis data (mvdx) by the basis
@@ -677,7 +678,7 @@ class AxesWindow(QtWidgets.QWidget, Axes_form):
         # places and store it as an attribute of the class
         self.formatted_mvdx_y = formatted_mvdx.round(2)
         DosesAndPaths.final_formatted_mvdx_y = self.formatted_mvdx_y
-        self.dataChanged.emit()
+        self.dataChangedRight.emit('right')
 
     def on_button_left_clicked(self):
         # Show panel with stats on X

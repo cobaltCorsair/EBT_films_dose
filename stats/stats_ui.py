@@ -5,7 +5,7 @@ from stats import logicStats
 
 
 class PanelWindow(QWidget):
-    def __init__(self, main_window, axes_window):
+    def __init__(self, main_window, axes_window, position='right'):
         super(PanelWindow, self).__init__()
         self.setFixedWidth(200)  # Set the width of the panel
         self.setFixedHeight(350)
@@ -61,56 +61,69 @@ class PanelWindow(QWidget):
             cf_item.setHidden(True)
             self.cf_items.append(cf_item)
 
+        # Add an attribute to keep track of which checkbox is associated with this instance
+        self.checkbox_position = position
+        self.gauss_checked = False
+
         self.tree.itemChanged.connect(self.handleItemChanged)
-        self.tree.itemChanged.connect(self.on_item_changed)
 
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.tree)
 
+        self.position = position
         self.main_window = main_window
         self.axes_window = axes_window
-        self.axes_window.dataChanged.connect(self.handle_data_changed)
+
+        self.dataChangedLeft = axes_window.dataChangedLeft
+        self.dataChangedRight = axes_window.dataChangedRight
 
         # Initialize lines to None
         self.line_x = None
         self.line_y = None
 
+        # Add these two lines
+        self.dataChangedLeftConnected = False
+        self.dataChangedRightConnected = False
+
     def handleItemChanged(self, item, column):
         if column == 0:
             hidden = item.checkState(0) == Qt.Unchecked
             if item == self.gauss_item:
-                self.constant_item.setHidden(hidden)
-                self.sigma_item.setHidden(hidden)
-                self.mu_item.setHidden(hidden)
-            elif item == self.poly_item:
-                for cf_item in self.cf_items:
-                    cf_item.setHidden(hidden)
+                self.gauss_checked = not hidden  # обновляем состояние
+                if hidden:
+                    if self.position == 'left' and self.dataChangedLeftConnected:
+                        self.dataChangedLeft.disconnect(self.handle_data_changed)
+                        self.dataChangedLeftConnected = False
+                    elif self.position == 'right' and self.dataChangedRightConnected:
+                        self.dataChangedRight.disconnect(self.handle_data_changed)
+                        self.dataChangedRightConnected = False
+                elif not hidden:
+                    if self.position == 'left':
+                        self.dataChangedLeft.connect(self.handle_data_changed)
+                        self.dataChangedLeftConnected = True
+                    elif self.position == 'right':
+                        self.dataChangedRight.connect(self.handle_data_changed)
+                        self.dataChangedRightConnected = True
+                    self.handle_data_changed(self.position)
 
-    def on_item_changed(self, item, column):
-        if item == self.gauss_item and column == 0:
-            if item.checkState(0) == Qt.Checked:
-                print('check')
-                # If it is, handle graph movement and print the new values
-                # TODO: Нужна проверка на то, какой именно чекбокс нажат, потому что сейчас возникает проблема
-                self.handle_data_changed()
-            else:
-                print('uncheck')
+    def handle_data_changed(self, position):
+        # Если флажок gauss_item не установлен, не обрабатывайте данные
+        if not self.gauss_checked or position != self.checkbox_position:
+            print(f'Ignoring data for {position} as checkbox is not checked')
+            return
 
-    def handle_data_changed(self):
-        print(f"Changed X data: {self.axes_window.formatted_mvdx_x}")
-        print(f"Changed Y data: {self.axes_window.formatted_mvdx_y}")
-
-        if self.axes_window.formatted_mvdx_x is not None and self.main_window.position == 'left':
-            cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
-                                                    DosesAndPaths.final_slice_values_x)
+        if position == 'left':
+            #cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
+                                                    #DosesAndPaths.final_slice_values_x)
             # Call plot_additional_data with your data and the corresponding axes
-            self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
-
-        if self.axes_window.formatted_mvdx_y is not None and self.main_window.position == 'right':
-            cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
-                                                    DosesAndPaths.final_slice_values_y)
+            #self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
+            print('Processing data for', position)
+        if position == 'right':
+            #cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
+                                                    #DosesAndPaths.final_slice_values_y)
             # Call plot_additional_data with your data and the corresponding axes
-            self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
+            #self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
+            print('Processing data for', position)
 
     def plot_additional_data(self, ax, x_data, cfs, color='r'):
         """
@@ -139,7 +152,7 @@ class PanelWindow(QWidget):
 class MainWindow(QWidget):
     def __init__(self, button, axes_window, position='right'):
         super(MainWindow, self).__init__()
-        self.panel = PanelWindow(self, axes_window=axes_window)
+        self.panel = PanelWindow(self, axes_window=axes_window, position=position)
         self.panel.setWindowTitle("Stats " + ('Y' if position == 'right' else 'X'))
         self.panel.hide()
 
