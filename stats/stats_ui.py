@@ -113,17 +113,27 @@ class PanelWindow(QWidget):
             return
 
         if position == 'left':
-            #cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
-                                                    #DosesAndPaths.final_slice_values_x)
-            # Call plot_additional_data with your data and the corresponding axes
-            #self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
+            if self.axes_window.formatted_mvdx_x is not None:
+                # Convert from millimeters back to pixels
+                pixel_data_x = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_x]
+                cfs, errs = logicStats.prepareGaussOwnX(pixel_data_x, DosesAndPaths.final_slice_values_x)
+                # Call plot_additional_data with your data and the corresponding axes
+                self.plot_additional_data(self.axes_window.ax_x, pixel_data_x, cfs, color='r')
+            else:
+                pass
             print('Processing data for', position)
         if position == 'right':
-            #cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
-                                                    #DosesAndPaths.final_slice_values_y)
-            # Call plot_additional_data with your data and the corresponding axes
-            #self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
+            if self.axes_window.formatted_mvdx_y is not None:
+                pixel_data_y = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_y]
+                cfs, errs = logicStats.prepareGaussOwnX(pixel_data_y, DosesAndPaths.final_slice_values_y)
+                # Call plot_additional_data with your data and the corresponding axes
+                self.plot_additional_data(self.axes_window.ax_y, pixel_data_y, cfs, color='r')
+            else:
+                pass
             print('Processing data for', position)
+
+    def mm_to_pixels(self, value):
+        return round(value / DosesAndPaths.basis_formatter, 0)
 
     def plot_additional_data(self, ax, x_data, cfs, color='r'):
         """
