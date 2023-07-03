@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHB
 from PyQt5.QtCore import Qt
 from doses_and_pathes import DosesAndPaths
 from stats import logicStats
+import numpy as np
 
 
 class PanelWindow(QWidget):
@@ -115,19 +116,19 @@ class PanelWindow(QWidget):
         if position == 'left':
             if self.axes_window.formatted_mvdx_x is not None:
                 # Convert from millimeters back to pixels
-                pixel_data_x = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_x]
-                cfs, errs = logicStats.prepareGaussOwnX(pixel_data_x, DosesAndPaths.final_slice_values_x)
+                #pixel_data_x = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_x]
+                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x, DosesAndPaths.final_slice_values_x)
                 # Call plot_additional_data with your data and the corresponding axes
-                self.plot_additional_data(self.axes_window.ax_x, pixel_data_x, cfs, color='r')
+                self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
             else:
                 pass
             print('Processing data for', position)
         if position == 'right':
             if self.axes_window.formatted_mvdx_y is not None:
-                pixel_data_y = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_y]
-                cfs, errs = logicStats.prepareGaussOwnX(pixel_data_y, DosesAndPaths.final_slice_values_y)
+                #pixel_data_y = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_y]
+                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y, DosesAndPaths.final_slice_values_y)
                 # Call plot_additional_data with your data and the corresponding axes
-                self.plot_additional_data(self.axes_window.ax_y, pixel_data_y, cfs, color='r')
+                self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
             else:
                 pass
             print('Processing data for', position)
@@ -144,17 +145,20 @@ class PanelWindow(QWidget):
         :param color: color of the line to plot
         """
         # Check if line exists and update data
+        newX = np.linspace(self.mm_to_pixels(x_data[0]), self.mm_to_pixels(x_data[-1]), 10000)
+        newFX = np.linspace(x_data[0], x_data[-1], 10000)
+        #print(x_data, newX, newFX)
         if self.line_x is not None and ax == self.axes_window.ax_x:
-            self.line_x.set_xdata(x_data)
-            self.line_x.set_ydata(logicStats.gauss(x_data, *cfs))
+            self.line_x.set_xdata(newX)
+            self.line_x.set_ydata(logicStats.gauss(newFX, *cfs))
         elif self.line_y is not None and ax == self.axes_window.ax_y:
-            self.line_y.set_xdata(x_data)
-            self.line_y.set_ydata(logicStats.gauss(x_data, *cfs))
+            self.line_y.set_xdata(newX)
+            self.line_y.set_ydata(logicStats.gauss(newFX, *cfs))
         else:  # Line does not exist, create it
             if ax == self.axes_window.ax_x:
-                self.line_x, = ax.plot(x_data, logicStats.gauss(x_data, *cfs), color=color)
+                self.line_x, = ax.plot(newX, logicStats.gauss(newFX, *cfs), color=color)
             elif ax == self.axes_window.ax_y:
-                self.line_y, = ax.plot(x_data, logicStats.gauss(x_data, *cfs), color=color)
+                self.line_y, = ax.plot(newX, logicStats.gauss(newFX, *cfs), color=color)
 
         ax.figure.canvas.draw()
 
