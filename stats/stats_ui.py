@@ -76,7 +76,7 @@ class PanelWindow(QWidget):
         # Add an attribute to keep track of which checkbox is associated with this instance
         self.checkbox_position = position
         self.gauss_checked = False
-        self.poly_checked = True
+        self.poly_checked = False
 
         self.tree.itemChanged.connect(self.handle_item_changed)
         self.tree.itemDoubleClicked.connect(self.handle_item_double_clicked)
@@ -121,6 +121,15 @@ class PanelWindow(QWidget):
                 self.sigma_item.setHidden(False)
                 self.mu_item.setHidden(False)
             self.handle_data_changed(self.position)
+        if column == 0 and item == self.poly_item:
+            hidden = item.checkState(0) == Qt.Unchecked
+            self.poly_checked = not hidden
+            if hidden:
+                self.handle_unchecked()
+            elif not hidden:
+                self.handle_checked()
+            self.handle_data_changed(self.position)
+
 
     def handle_unchecked(self):
         """
@@ -192,7 +201,7 @@ class PanelWindow(QWidget):
         Event handler function for when the data is changed.
         :param position: The position of the window that triggered the event
         """
-        if not self.gauss_checked or position != self.checkbox_position:
+        if position != self.checkbox_position:
             return
 
         from .logicStats import universalFunctions as u
@@ -218,7 +227,12 @@ class PanelWindow(QWidget):
                 self.plot_additional_data(ax, v)
 
             if self.poly_checked:
-                pass
+                v = s(np.array([mvdx, final_slice_values]), u.polynomial, basisFormatter=DosesAndPaths.basis_formatter)
+                v.run()
+                cfs = v.getMeDataForPrinting()
+                self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
+                self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
+                self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
 
         v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
         v.run()
