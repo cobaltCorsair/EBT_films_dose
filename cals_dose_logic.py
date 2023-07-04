@@ -35,6 +35,68 @@ from AxesWindow import AxesWindow
 
 plt.switch_backend('agg')
 
+        ax_x.grid(True, linestyle="-.")
+        # Add a function to move the X diagram along the X axis
+        self.moveline_x_x = MoveGraphLine(graf_x, ax_x, move_speed=0.1)
+        self.moveline_x_x.dataChanged.connect(self.handle_data_changed)
+
+        # y axis
+        self.figure_map_y.clf()
+        ax_y = self.figure_map_y.add_subplot(111)
+        ax_y.grid(True, linestyle="-.")
+        graf_y, slice_values_y = AxesWindow.dose_limits_for_graph(slice_y, ax_y)
+        ax_y.xaxis.set_major_formatter(formatter)
+        ax_y.set_xlabel('mm')
+        ax_y.set_ylabel('Absorbed dose, Gy')
+        self.canvas_map_y.draw()
+        self.pushButton_3.clicked.connect(lambda: self.get_values(slice_values_y, 'Y axis'))
+        self.pushButton_4.clicked.connect(lambda: SaveLoadData.save_as_excel_file_axis(slice_values_y,
+                                                                                       'Y axis', self.formatted_mvdx))
+
+        # Add a function to move the Y diagram along the X axis
+        self.moveline_x_y = MoveGraphLine(graf_y, ax_y, move_speed=0.1)
+        self.moveline_x_y.dataChanged.connect(self.handle_data_changed)
+
+    def get_values(self, values, ax_name):
+        """
+        Get the values of doses on the axis in dialog window
+        :param values: values of doses
+        :param ax_name: name of the axis
+        """
+        self.value_win = ValuesWindow()
+        self.value_win.label.setText(ax_name)
+        values_with_separator = ('\n'.join(map(str, [round(x, 4) for x in values]))).replace('.', ',')
+        if len(values) > 0:
+            self.value_win.plainTextEdit.appendPlainText(values_with_separator)
+        self.value_win.show()
+
+    def closeEvent(self, event):
+        """
+        Clear figure
+        :param event: Window close
+        """
+        plt.close(self.figure_map_x)
+        plt.close(self.figure_map_y)
+        self.closeDialog.emit()
+
+    def handle_data_changed(self, mvdx, mvdy):
+        # Multiply the raw x-axis data (mvdx) by the basis
+        # formatter to convert the values to the desired scale
+        formatted_mvdx = mvdx * DosesAndPaths.basis_formatter
+
+        # Round the formatted x-axis data to 0 decimal
+        # places and store it as an attribute of the class
+        self.formatted_mvdx = formatted_mvdx.round(2)
+
+
+        # Multiply the raw x-axis data (mvdx) by the basis
+        # formatter to convert the values to the desired scale
+        formatted_mvdx = mvdx * DosesAndPaths.basis_formatter
+
+        # Round the formatted x-axis data to 0 decimal
+        # places and store it as an attribute of the class
+        self.formatted_mvdx = formatted_mvdx.round(2)
+
 
 class CalcUI(QtWidgets.QMainWindow):
     """
@@ -435,13 +497,13 @@ class CalcUI(QtWidgets.QMainWindow):
             return True
 
     @staticmethod
-    def check_fields_bd_mode():
-        if DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None \
-                and DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_array_original is not None:
-            return True
 
-
-
+    def showEvent(self, event):
+        """
+        :param event: Window show
+        """
+        self.reload_old_setting()
+        self.openDialog.emit()
 
 
 class IsAdmin:
@@ -458,6 +520,14 @@ class IsAdmin:
 
         if is_admin:
             Warnings.error_if_is_admin()
+
+
+class GraphsStatistics:
+    """
+    Print stats on the left/right windows
+    """
+    def __init__(self):
+        pass
 
 
 if __name__ == "__main__":
