@@ -191,8 +191,8 @@ class PanelWindow(QWidget):
         if not self.gauss_checked or position != self.checkbox_position:
             return
         
-        from logicStats import universalFunctions as u
-        from logicStats import universalStats as s
+        from .logicStats import universalFunctions as u
+        from .logicStats import universalStats as s
           
         if position == 'left':
             mvdx = self.axes_window.formatted_mvdx_x
@@ -211,7 +211,7 @@ class PanelWindow(QWidget):
                 self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
                 self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
                 self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
-                self.plot_additional_data(ax, v, kind=v.gauss)
+                self.plot_additional_data(ax, v)
 
             if self.poly_checked:
                 pass
@@ -224,44 +224,30 @@ class PanelWindow(QWidget):
         """
         return round(value / DosesAndPaths.basis_formatter, 0)
 
-    def plot_additional_data(self, ax, v, kind=v.basic, color="r"):
+    def plot_additional_data(self, ax, v, color="r"):
         """
         Function for plotting additional data on a given axis.
         :param ax: The axis on which to plot the data
         :param v: object of our current fitting state  
         :type v: logicStats.universalStats
-        :param kind: kind of fit in enum format
-        :type kind: logicStats.universalFunctions 
+        :param cfs: The y values of the data to plot
+        :param color: The color of the line to plot. Default is red.
         """
         # Check if line exists and update data
-        if kind == v.gauss:
-            o = v.getMeDataForMatplotlibPlot()
-            if self.line_x is not None and ax == self.axes_window.ax_x:
-                self.line_x.set_xdata(o[0])
-                self.line_x.set_ydata(o[1])
-            elif self.line_y is not None and ax == self.axes_window.ax_y:
-                self.line_y.set_xdata(o[0])
-                self.line_y.set_ydata(o[1])
-            else:  # Line does not exist, create it
-                er = getMeDataForPrinting()
-                if ax == self.axes_window.ax_x:
-                    self.line_x, = ax.plot(o[0], o[1], color)
-                elif ax == self.axes_window.ax_y:
-                    self.line_y, = ax.plot(o[0], o[1], color)
-        if kind == v.residual:   
-            o = v.getMeDataForMatplotlibPlot()
-            if self.line_x is not None and ax == self.axes_window.ax_x:
-                self.line_x.set_xdata(o[0])
-                self.line_x.set_ydata(o[1])
-            elif self.line_y is not None and ax == self.axes_window.ax_y:
-                self.line_y.set_xdata(o[0])
-                self.line_y.set_ydata(o[1])
-            else:  # Line does not exist, create it
-                if ax == self.axes_window.ax_x:
-                    self.line_x, = ax.plot(*o)
-                elif ax == self.axes_window.ax_y:
-                    self.line_y, = ax.plot(*o)
-
+        o = v.getMeDataForMatplotlibPlot()
+        if self.line_x is not None and ax == self.axes_window.ax_x:
+            self.line_x.set_xdata(o[0])
+            self.line_x.set_ydata(o[1])
+        elif self.line_y is not None and ax == self.axes_window.ax_y:
+            self.line_y.set_xdata(o[0])
+            self.line_y.set_ydata(o[1])
+        else:  # Line does not exist, create it
+            if ax == self.axes_window.ax_x:
+                self.line_x, = ax.plot(*o)
+                #self.line_x, = ax.plot(o[0], o[1], color)
+            elif ax == self.axes_window.ax_y:
+                self.line_y, = ax.plot(*o)
+                #self.line_y, = ax.plot(o[0], o[1], color)
 
         ax.figure.canvas.draw()
 
