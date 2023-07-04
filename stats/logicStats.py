@@ -18,7 +18,7 @@ class universalFunctions(enum.Enum):
 class universalStats(object):
     def __init__(self, obj, kind=universalFunctions.gauss, dpi=150, **kwargs):
         self.__dict__['kind'] = kind
-        #self.__dict__['dpi'] = dpi
+        # self.__dict__['dpi'] = dpi
         self.__dict__['basisFormatter'] = kwargs.get("basisFormatter", 25.4 / dpi)
         if kind == universalFunctions.gauss:
             x = obj[0, :]
@@ -38,11 +38,10 @@ class universalStats(object):
             self.__dict__['fitFunc'] = polyFit
             self.__dict__['callFunc'] = preparePolyFit
 
-    
     def run(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
-            #cfs, variation = curve_fit(self.__dict__['fitFunc'], newX, x, p0=p0)
-            #errs = np.sqrt(np.diag(variation))
+            # cfs, variation = curve_fit(self.__dict__['fitFunc'], newX, x, p0=p0)
+            # errs = np.sqrt(np.diag(variation))
 
             self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
 
@@ -50,15 +49,17 @@ class universalStats(object):
         return np.round(value / self.__dict__['basisFormatter'])
 
     def getMeDataForMatplotlibPlot(self):
-        if self.__dict__['kind'] == universalFunctions.gauss:
+        if self.__dict__['kind'] == universalFunctions.gauss or \
+                self.__dict__['kind'] == universalFunctions.polynomial:
             newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
             newFX = np.linspace(self.x[0], self.x[-1], 10000)
             return newX, self.__dict__['fitFunc'](newFX, *self.data[0])
-        
+
     def getMeDataForPrinting(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
             return self.data[0], self.data[1]
-
+        elif self.__dict__['kind'] == universalFunctions.basic:
+            return np.array(vmin(self.y), vmax(self.y), mean(self.y))
 
 
 def gauss(x, *p):
@@ -72,7 +73,7 @@ def gauss(x, *p):
     @rtype: float
     """
     A, mu, sigma = p
-    return A*np.exp(-(x-mu)**2/(2.*sigma**2))
+    return A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
 
 
 def mean(x):
@@ -96,7 +97,7 @@ def vmin(x):
     return np.min(x)
 
 
-def prepareGauss(x, p0 = [1., 0., 1.]):
+def prepareGauss(x, p0=[1., 0., 1.]):
     """
     Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x
     @param x:
@@ -109,12 +110,12 @@ def prepareGauss(x, p0 = [1., 0., 1.]):
     cfs, variation = curve_fit(gauss, centres, hist, p0=p0)
     errs = np.sqrt(np.diag(variation))
 
-    #hist_fit = gauss(centres, *cfs)
+    # hist_fit = gauss(centres, *cfs)
 
-    return (cfs, errs, )
+    return (cfs, errs,)
 
 
-def prepareGaussOwnX(newX, x, p0 = [1., 0., 1.]):
+def prepareGaussOwnX(newX, x, p0=[1., 0., 1.]):
     """
     Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x с адресацией
     точек массива по newX
