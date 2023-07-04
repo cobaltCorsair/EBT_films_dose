@@ -35,7 +35,6 @@ from AxesWindow import AxesWindow
 
 plt.switch_backend('agg')
 
-
 class CalcUI(QtWidgets.QMainWindow):
     """
     Main interface
@@ -435,13 +434,13 @@ class CalcUI(QtWidgets.QMainWindow):
             return True
 
     @staticmethod
-    def check_fields_bd_mode():
-        if DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None \
-                and DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_array_original is not None:
-            return True
 
-
-
+    def showEvent(self, event):
+        """
+        :param event: Window show
+        """
+        self.reload_old_setting()
+        self.openDialog.emit()
 
 
 class IsAdmin:
@@ -458,6 +457,14 @@ class IsAdmin:
 
         if is_admin:
             Warnings.error_if_is_admin()
+
+
+class GraphsStatistics:
+    """
+    Print stats on the left/right windows
+    """
+    def __init__(self):
+        pass
 
 
 if __name__ == "__main__":
