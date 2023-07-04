@@ -31,9 +31,21 @@ class MyTestCase(unittest.TestCase):
         dte = logicStats.gauss(0.0, *gs)
         self.assertAlmostEqual(dte, gs[0], delta=3 * err[0])
 
+    def test_newStyle(self):
+        from logicStats import universalFunctions as f
+        from logicStats import universalStats as s
+        data1 = np.random.normal(size=10000, loc=1.2, scale=1.)
+        hist, edges = np.histogram(data1, density=True)
+        centres = (edges[:-1] + edges[1:]) / 2
+        data = np.array([centres, hist])
+        mo = s(data, kind=f.gauss, dpi=1)
+        mo.run()
+        print(mo.getMeDataForPrinting())
+
 
     def test_polyfit1(self):
         pass
+        return True
         #data = np.random.normal(size=10000, loc=0.0, scale=1.)
         #print(data)
         #hist, edges = np.histogram(data, density=True)
