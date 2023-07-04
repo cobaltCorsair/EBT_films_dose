@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QMenu
 from PyQt5.QtCore import Qt
 from doses_and_pathes import DosesAndPaths
 from stats import logicStats
@@ -74,6 +74,9 @@ class PanelWindow(QWidget):
         self.gauss_checked = False
 
         self.tree.itemChanged.connect(self.handle_item_changed)
+        self.tree.itemDoubleClicked.connect(self.handle_item_double_clicked)
+        self.tree.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self.open_menu)
 
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.tree)
@@ -155,32 +158,65 @@ class PanelWindow(QWidget):
                     self.line_y = None  # Reset to None
             ax.figure.canvas.draw()  # Update the canvas
 
+    def handle_item_double_clicked(self, item, column):
+        if column == 1:  # Only allow copying from the Value column
+            clipboard = QApplication.clipboard()
+            clipboard.setText(item.text(column))
+
+    def open_menu(self, position):
+        """
+        Function to create and open a context menu at the given position.
+        :param position: The position to open the menu at.
+        """
+        menu = QMenu()
+        copy_action = menu.addAction("Copy")
+        copy_action.triggered.connect(self.copy_item_text)
+        menu.exec_(self.tree.viewport().mapToGlobal(position))
+
+    def copy_item_text(self):
+        """
+        Function to copy the current item's text to clipboard.
+        """
+        item = self.tree.currentItem()
+        if item is not None and item.columnCount() > 1:  # Make sure item and Value column exist
+            clipboard = QApplication.clipboard()
+            clipboard.setText(item.text(1))  # Copy text from Value column
+
     def handle_data_changed(self, position):
         """
         Event handler function for when the data is changed.
         :param position: The position of the window that triggered the event
         """
         if not self.gauss_checked or position != self.checkbox_position:
-            print(f'Ignoring data for {position} as checkbox is not checked')
             return
 
         if position == 'left':
             if self.axes_window.formatted_mvdx_x is not None:
                 # Convert from millimeters back to pixels
                 cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x, DosesAndPaths.final_slice_values_x)
+                # Convert from millimeters back to pixels
+                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
+                                                        DosesAndPaths.final_slice_values_x)
+                self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
+                self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
+                self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
                 # Call plot_additional_data with your data and the corresponding axes
                 self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
             else:
                 pass
-            print('Processing data for', position)
         if position == 'right':
             if self.axes_window.formatted_mvdx_y is not None:
                 cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y, DosesAndPaths.final_slice_values_y)
+                # Convert from millimeters back to pixels
+                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
+                                                        DosesAndPaths.final_slice_values_y)
+                self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
+                self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
+                self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
                 # Call plot_additional_data with your data and the corresponding axes
                 self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
             else:
                 pass
-            print('Processing data for', position)
 
     def mm_to_pixels(self, value):
         """
