@@ -191,32 +191,20 @@ class PanelWindow(QWidget):
             return
 
         if position == 'left':
-            if self.axes_window.formatted_mvdx_x is not None:
-                # Convert from millimeters back to pixels
-                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x, DosesAndPaths.final_slice_values_x)
-                # Convert from millimeters back to pixels
-                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x,
-                                                        DosesAndPaths.final_slice_values_x)
-                self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
-                self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
-                self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
-                # Call plot_additional_data with your data and the corresponding axes
-                self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
-            else:
-                pass
-        if position == 'right':
-            if self.axes_window.formatted_mvdx_y is not None:
-                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y, DosesAndPaths.final_slice_values_y)
-                # Convert from millimeters back to pixels
-                cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y,
-                                                        DosesAndPaths.final_slice_values_y)
-                self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
-                self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
-                self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
-                # Call plot_additional_data with your data and the corresponding axes
-                self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
-            else:
-                pass
+            mvdx = self.axes_window.formatted_mvdx_x
+            final_slice_values = DosesAndPaths.final_slice_values_x
+            ax = self.axes_window.ax_x
+        elif position == 'right':
+            mvdx = self.axes_window.formatted_mvdx_y
+            final_slice_values = DosesAndPaths.final_slice_values_y
+            ax = self.axes_window.ax_y
+
+        if mvdx is not None:
+            cfs, errs = logicStats.prepareGaussOwnX(mvdx, final_slice_values)
+            self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
+            self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
+            self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+            self.plot_additional_data(ax, mvdx, cfs, color='r')
 
     def mm_to_pixels(self, value):
         """
