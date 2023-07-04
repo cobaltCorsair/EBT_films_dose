@@ -52,7 +52,7 @@ class universalStats(object):
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
             except RuntimeError:
-                self.data = self.__dict__['fitFunc'](self.x, *self.basicAssumptions)
+                self.data = self.basicAssumptions
         if self.__dict__['kind'] == universalFunctions.polynomial:
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
