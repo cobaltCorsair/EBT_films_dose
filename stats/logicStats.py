@@ -38,6 +38,13 @@ class universalStats(object):
             self.__dict__['fitFunc'] = polyFit
             self.__dict__['callFunc'] = preparePolyFit
 
+        elif kind == universalFunctions.basic:
+            x = obj[0, :]
+            y = obj[1, :]
+            self.basicAssumptions = 3
+            self.x = x
+            self.y = y
+
     def run(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
             # cfs, variation = curve_fit(self.__dict__['fitFunc'], newX, x, p0=p0)
@@ -59,7 +66,7 @@ class universalStats(object):
         if self.__dict__['kind'] == universalFunctions.gauss:
             return self.data[0], self.data[1]
         elif self.__dict__['kind'] == universalFunctions.basic:
-            return np.array(vmin(self.y), vmax(self.y), mean(self.y))
+            return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
 
 
 def gauss(x, *p):

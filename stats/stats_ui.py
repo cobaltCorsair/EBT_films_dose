@@ -38,6 +38,10 @@ class PanelWindow(QWidget):
         self.median_item.setText(0, "Median")
         self.median_item.setText(1, "0")
 
+        self.mean_item = QTreeWidgetItem(self.stats_item)
+        self.mean_item.setText(0, "Mean")
+        self.mean_item.setText(1, "0")
+
         self.gauss_item = QTreeWidgetItem(self.tree)
         self.gauss_item.setText(0, "Gauss")
         self.gauss_item.setCheckState(0, Qt.Unchecked)
@@ -190,7 +194,7 @@ class PanelWindow(QWidget):
         """
         if not self.gauss_checked or position != self.checkbox_position:
             return
-        
+
         from .logicStats import universalFunctions as u
         from .logicStats import universalStats as s
           
@@ -215,6 +219,13 @@ class PanelWindow(QWidget):
 
             if self.poly_checked:
                 pass
+
+        v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+        v.run()
+        self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
+        self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")
+        self.max_item.setText(1, f"{v.getMeDataForPrinting()[1]:.2f}")
+        self.min_item.setText(1, f"{v.getMeDataForPrinting()[0]:.2f}")
 
     def mm_to_pixels(self, value):
         """
