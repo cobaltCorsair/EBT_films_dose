@@ -1,10 +1,11 @@
 import unittest
-import logicStats
+from stats import logicStats
 import numpy as np
 import logicParser
 from pymongo import MongoClient
 from database import dbProxy
 import tifffile
+
 
 class MyTestCase(unittest.TestCase):
     def setUp(self) -> None:
@@ -20,7 +21,7 @@ class MyTestCase(unittest.TestCase):
         # fitting the function and obtaining it's error
         gs, err = logicStats.prepareGauss(data)
         # checking whether obtained value of mu at gs[1] is within 3 sigma (err[1]) from original loc
-        self.assertAlmostEqual(loc, gs[1], delta=3*err[1])
+        self.assertAlmostEqual(loc, gs[1], delta=3 * err[1])
 
     def test_funcCall(self):
         loc = 0.0
@@ -28,7 +29,7 @@ class MyTestCase(unittest.TestCase):
         gs, err = logicStats.prepareGauss(data)
 
         dte = logicStats.gauss(0.0, *gs)
-        self.assertAlmostEqual(dte, gs[0], delta=3*err[0])
+        self.assertAlmostEqual(dte, gs[0], delta=3 * err[0])
 
     def test_newStyle(self):
         from logicStats import universalFunctions as f
