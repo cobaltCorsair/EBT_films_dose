@@ -75,7 +75,7 @@ class universalStats(object):
         elif self.__dict__['kind'] == universalFunctions.basic:
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
-            return self.data[0]
+            return self.data[0], self.data[1], self.data[2]
 
 
 def gauss(x, *p):
