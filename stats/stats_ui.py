@@ -7,6 +7,13 @@ import numpy as np
 
 class PanelWindow(QWidget):
     def __init__(self, main_window, axes_window, position='right'):
+        """
+        Initializer for the PanelWindow class. This function sets the default values for the panel window and creates
+        widgets that are used in the window.
+        :param main_window: Parent window to the panel window
+        :param axes_window: Reference to the window which will be updated when checkboxes are clicked
+        :param position: The position of the window relative to the main window. Default is 'right'.
+        """
         super(PanelWindow, self).__init__()
         self.setFixedWidth(200)  # Set the width of the panel
         self.setFixedHeight(350)
@@ -66,7 +73,7 @@ class PanelWindow(QWidget):
         self.checkbox_position = position
         self.gauss_checked = False
 
-        self.tree.itemChanged.connect(self.handleItemChanged)
+        self.tree.itemChanged.connect(self.handle_item_changed)
 
         self.layout = QVBoxLayout(self)
         self.layout.addWidget(self.tree)
@@ -86,29 +93,67 @@ class PanelWindow(QWidget):
         self.dataChangedLeftConnected = False
         self.dataChangedRightConnected = False
 
-    def handleItemChanged(self, item, column):
-        if column == 0:
+    def handle_item_changed(self, item, column):
+        """
+        Event handler function for changes in items in the QTreeWidget.
+        :param item: The item that was changed
+        :param column: The column of the item that was changed
+        """
+        if column == 0 and item == self.gauss_item:
             hidden = item.checkState(0) == Qt.Unchecked
-            if item == self.gauss_item:
-                self.gauss_checked = not hidden  # обновляем состояние
-                if hidden:
-                    if self.position == 'left' and self.dataChangedLeftConnected:
-                        self.dataChangedLeft.disconnect(self.handle_data_changed)
-                        self.dataChangedLeftConnected = False
-                    elif self.position == 'right' and self.dataChangedRightConnected:
-                        self.dataChangedRight.disconnect(self.handle_data_changed)
-                        self.dataChangedRightConnected = False
-                elif not hidden:
-                    if self.position == 'left':
-                        self.dataChangedLeft.connect(self.handle_data_changed)
-                        self.dataChangedLeftConnected = True
-                    elif self.position == 'right':
-                        self.dataChangedRight.connect(self.handle_data_changed)
-                        self.dataChangedRightConnected = True
-                    self.handle_data_changed(self.position)
+            self.gauss_checked = not hidden
+            if hidden:
+                self.handle_unchecked()
+            elif not hidden:
+                self.handle_checked()
+            self.handle_data_changed(self.position)
+
+    def handle_unchecked(self):
+        """
+        Event handler function for when the checkbox in the panel window is unchecked.
+        """
+        if self.position == 'left' and self.dataChangedLeftConnected:
+            self.dataChangedLeft.disconnect(self.handle_data_changed)
+            self.dataChangedLeftConnected = False
+            self.remove_line(self.axes_window.ax_x, 'x')
+
+        elif self.position == 'right' and self.dataChangedRightConnected:
+            self.dataChangedRight.disconnect(self.handle_data_changed)
+            self.dataChangedRightConnected = False
+            self.remove_line(self.axes_window.ax_y, 'y')
+
+    def handle_checked(self):
+        """
+        Event handler function for when the checkbox in the panel window is checked.
+        """
+        if self.position == 'left':
+            self.dataChangedLeft.connect(self.handle_data_changed)
+            self.dataChangedLeftConnected = True
+        elif self.position == 'right':
+            self.dataChangedRight.connect(self.handle_data_changed)
+            self.dataChangedRightConnected = True
+
+    def remove_line(self, ax, axis):
+        """
+        Function for removing a line from a given axis.
+        :param ax: The axis from which to remove the line
+        :param axis: A string indicating the type of axis (x or y)
+        """
+        line = self.line_x if axis == 'x' else self.line_y
+        if line is not None:
+            if line in ax.lines:
+                line.remove()
+                if axis == 'x':
+                    self.line_x = None  # Reset to None
+                else:
+                    self.line_y = None  # Reset to None
+            ax.figure.canvas.draw()  # Update the canvas
 
     def handle_data_changed(self, position):
-        # Если флажок gauss_item не установлен, не обрабатывайте данные
+        """
+        Event handler function for when the data is changed.
+        :param position: The position of the window that triggered the event
+        """
         if not self.gauss_checked or position != self.checkbox_position:
             print(f'Ignoring data for {position} as checkbox is not checked')
             return
@@ -116,7 +161,6 @@ class PanelWindow(QWidget):
         if position == 'left':
             if self.axes_window.formatted_mvdx_x is not None:
                 # Convert from millimeters back to pixels
-                #pixel_data_x = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_x]
                 cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_x, DosesAndPaths.final_slice_values_x)
                 # Call plot_additional_data with your data and the corresponding axes
                 self.plot_additional_data(self.axes_window.ax_x, self.axes_window.formatted_mvdx_x, cfs, color='r')
@@ -125,7 +169,6 @@ class PanelWindow(QWidget):
             print('Processing data for', position)
         if position == 'right':
             if self.axes_window.formatted_mvdx_y is not None:
-                #pixel_data_y = [self.mm_to_pixels(value) for value in self.axes_window.formatted_mvdx_y]
                 cfs, errs = logicStats.prepareGaussOwnX(self.axes_window.formatted_mvdx_y, DosesAndPaths.final_slice_values_y)
                 # Call plot_additional_data with your data and the corresponding axes
                 self.plot_additional_data(self.axes_window.ax_y, self.axes_window.formatted_mvdx_y, cfs, color='r')
@@ -134,20 +177,24 @@ class PanelWindow(QWidget):
             print('Processing data for', position)
 
     def mm_to_pixels(self, value):
+        """
+        Utility function for converting millimeters to pixels.
+        :param value: The value in millimeters to convert to pixels
+        :return: The converted value in pixels
+        """
         return round(value / DosesAndPaths.basis_formatter, 0)
 
     def plot_additional_data(self, ax, x_data, cfs, color='r'):
         """
-        Plot additional data on the given axes
-        :param ax: axes object where the data will be plotted
-        :param x_data: x values of the data to plot
-        :param cfs: y values of the data to plot
-        :param color: color of the line to plot
+        Function for plotting additional data on a given axis.
+        :param ax: The axis on which to plot the data
+        :param x_data: The x values of the data to plot
+        :param cfs: The y values of the data to plot
+        :param color: The color of the line to plot. Default is red.
         """
         # Check if line exists and update data
         newX = np.linspace(self.mm_to_pixels(x_data[0]), self.mm_to_pixels(x_data[-1]), 10000)
         newFX = np.linspace(x_data[0], x_data[-1], 10000)
-        #print(x_data, newX, newFX)
         if self.line_x is not None and ax == self.axes_window.ax_x:
             self.line_x.set_xdata(newX)
             self.line_x.set_ydata(logicStats.gauss(newFX, *cfs))
@@ -165,6 +212,13 @@ class PanelWindow(QWidget):
 
 class MainWindow(QWidget):
     def __init__(self, button, axes_window, position='right'):
+        """
+        Initializer for the MainWindow class. This function sets the default values for the main window and creates
+        widgets that are used in the window.
+        :param button: Button widget that will be used to show the panel
+        :param axes_window: Reference to the window which will be updated when checkboxes are clicked
+        :param position: The position of the window relative to the main window. Default is 'right'.
+        """
         super(MainWindow, self).__init__()
         self.panel = PanelWindow(self, axes_window=axes_window, position=position)
         self.panel.setWindowTitle("Stats " + ('Y' if position == 'right' else 'X'))
@@ -174,6 +228,10 @@ class MainWindow(QWidget):
         self.position = position
 
     def show_panel(self):
+        """
+        Function for showing the panel window. The position of the panel window is calculated based on the position of
+        the button in the main window and the position property of the panel window.
+        """
         # Move the panel to the right of the button
         if self.position == 'right':
             self.panel.move(
