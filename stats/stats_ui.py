@@ -202,8 +202,8 @@ class PanelWindow(QWidget):
         if mvdx is not None:
             cfs, errs = logicStats.prepareGaussOwnX(mvdx, final_slice_values)
             self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
-            self.sigma_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
-            self.mu_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+            self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+            self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
             self.plot_additional_data(ax, mvdx, cfs, color='r')
 
     def mm_to_pixels(self, value):
