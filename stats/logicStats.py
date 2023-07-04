@@ -28,6 +28,16 @@ class universalStats(object):
             self.y = y
             self.__dict__['fitFunc'] = gauss
             self.__dict__['callFunc'] = prepareGaussOwnX
+
+        elif kind == universalFunctions.polynomial:
+            x = obj[0, :]
+            y = obj[1, :]
+            self.basicAssumptions = 3
+            self.x = x
+            self.y = y
+            self.__dict__['fitFunc'] = polyFit
+            self.__dict__['callFunc'] = preparePolyFit
+
     
     def run(self):
         if self.__dict__['kind'] == universalFunctions.gauss:

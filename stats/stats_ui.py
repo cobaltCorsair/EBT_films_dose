@@ -72,6 +72,7 @@ class PanelWindow(QWidget):
         # Add an attribute to keep track of which checkbox is associated with this instance
         self.checkbox_position = position
         self.gauss_checked = False
+        self.poly_checked = True
 
         self.tree.itemChanged.connect(self.handle_item_changed)
         self.tree.itemDoubleClicked.connect(self.handle_item_double_clicked)
@@ -189,7 +190,10 @@ class PanelWindow(QWidget):
         """
         if not self.gauss_checked or position != self.checkbox_position:
             return
-
+        
+        from logicStats import universalFunctions as u
+        from logicStats import universalStats as s
+          
         if position == 'left':
             mvdx = self.axes_window.formatted_mvdx_x
             final_slice_values = DosesAndPaths.final_slice_values_x
@@ -200,11 +204,17 @@ class PanelWindow(QWidget):
             ax = self.axes_window.ax_y
 
         if mvdx is not None:
-            cfs, errs = logicStats.prepareGaussOwnX(mvdx, final_slice_values)
-            self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
-            self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
-            self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
-            self.plot_additional_data(ax, mvdx, cfs, color='r')
+            if self.gauss_checked:
+                v = s(np.array([mvdx, final_slice_values]), u.gauss, basisFormatter=DosesAndPaths.basis_formatter)
+                v.run()
+                cfs, errs = v.getMeDataForPrinting()
+                self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
+                self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
+                self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+                self.plot_additional_data(ax, v, kind=v.gauss)
+
+            if self.poly_checked:
+                pass
 
     def mm_to_pixels(self, value):
         """
@@ -214,28 +224,44 @@ class PanelWindow(QWidget):
         """
         return round(value / DosesAndPaths.basis_formatter, 0)
 
-    def plot_additional_data(self, ax, x_data, cfs, color='r'):
+    def plot_additional_data(self, ax, v, kind=v.basic, color="r"):
         """
         Function for plotting additional data on a given axis.
         :param ax: The axis on which to plot the data
-        :param x_data: The x values of the data to plot
-        :param cfs: The y values of the data to plot
-        :param color: The color of the line to plot. Default is red.
+        :param v: object of our current fitting state  
+        :type v: logicStats.universalStats
+        :param kind: kind of fit in enum format
+        :type kind: logicStats.universalFunctions 
         """
         # Check if line exists and update data
-        newX = np.linspace(self.mm_to_pixels(x_data[0]), self.mm_to_pixels(x_data[-1]), 10000)
-        newFX = np.linspace(x_data[0], x_data[-1], 10000)
-        if self.line_x is not None and ax == self.axes_window.ax_x:
-            self.line_x.set_xdata(newX)
-            self.line_x.set_ydata(logicStats.gauss(newFX, *cfs))
-        elif self.line_y is not None and ax == self.axes_window.ax_y:
-            self.line_y.set_xdata(newX)
-            self.line_y.set_ydata(logicStats.gauss(newFX, *cfs))
-        else:  # Line does not exist, create it
-            if ax == self.axes_window.ax_x:
-                self.line_x, = ax.plot(newX, logicStats.gauss(newFX, *cfs), color=color)
-            elif ax == self.axes_window.ax_y:
-                self.line_y, = ax.plot(newX, logicStats.gauss(newFX, *cfs), color=color)
+        if kind == v.gauss:
+            o = v.getMeDataForMatplotlibPlot()
+            if self.line_x is not None and ax == self.axes_window.ax_x:
+                self.line_x.set_xdata(o[0])
+                self.line_x.set_ydata(o[1])
+            elif self.line_y is not None and ax == self.axes_window.ax_y:
+                self.line_y.set_xdata(o[0])
+                self.line_y.set_ydata(o[1])
+            else:  # Line does not exist, create it
+                er = getMeDataForPrinting()
+                if ax == self.axes_window.ax_x:
+                    self.line_x, = ax.plot(o[0], o[1], color)
+                elif ax == self.axes_window.ax_y:
+                    self.line_y, = ax.plot(o[0], o[1], color)
+        if kind == v.residual:   
+            o = v.getMeDataForMatplotlibPlot()
+            if self.line_x is not None and ax == self.axes_window.ax_x:
+                self.line_x.set_xdata(o[0])
+                self.line_x.set_ydata(o[1])
+            elif self.line_y is not None and ax == self.axes_window.ax_y:
+                self.line_y.set_xdata(o[0])
+                self.line_y.set_ydata(o[1])
+            else:  # Line does not exist, create it
+                if ax == self.axes_window.ax_x:
+                    self.line_x, = ax.plot(*o)
+                elif ax == self.axes_window.ax_y:
+                    self.line_y, = ax.plot(*o)
+
 
         ax.figure.canvas.draw()
 
