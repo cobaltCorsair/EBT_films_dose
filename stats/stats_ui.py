@@ -104,8 +104,14 @@ class PanelWindow(QWidget):
             self.gauss_checked = not hidden
             if hidden:
                 self.handle_unchecked()
+                self.constant_item.setHidden(True)
+                self.sigma_item.setHidden(True)
+                self.mu_item.setHidden(True)
             elif not hidden:
                 self.handle_checked()
+                self.constant_item.setHidden(False)
+                self.sigma_item.setHidden(False)
+                self.mu_item.setHidden(False)
             self.handle_data_changed(self.position)
 
     def handle_unchecked(self):
