@@ -49,8 +49,15 @@ class universalStats(object):
         if self.__dict__['kind'] == universalFunctions.gauss:
             # cfs, variation = curve_fit(self.__dict__['fitFunc'], newX, x, p0=p0)
             # errs = np.sqrt(np.diag(variation))
-
-            self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
+            try:
+                self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
+            except RuntimeError:
+                self.data = self.basicAssumptions
+        if self.__dict__['kind'] == universalFunctions.polynomial:
+            try:
+                self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
+            except RuntimeError:
+                self.data = None
 
     def axisHelper(self, value):
         return np.round(value / self.__dict__['basisFormatter'])
@@ -67,6 +74,8 @@ class universalStats(object):
             return self.data[0], self.data[1]
         elif self.__dict__['kind'] == universalFunctions.basic:
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
+        elif self.__dict__['kind'] == universalFunctions.polynomial:
+            return self.data[0]
 
 
 def gauss(x, *p):
