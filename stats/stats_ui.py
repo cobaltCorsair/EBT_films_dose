@@ -138,7 +138,6 @@ class PanelWindow(QWidget):
                 self.cf_items[3].setHidden(False)
             self.handle_data_changed(self.position)
 
-
     def handle_unchecked(self):
         """
         Event handler function for when the checkbox in the panel window is unchecked.
@@ -244,12 +243,12 @@ class PanelWindow(QWidget):
                 self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
                 self.plot_additional_data(ax, v)
 
-        v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
-        v.run()
-        self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
-        self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")
-        self.max_item.setText(1, f"{v.getMeDataForPrinting()[1]:.2f}")
-        self.min_item.setText(1, f"{v.getMeDataForPrinting()[0]:.2f}")
+            v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+            v.run()
+            self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
+            self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")
+            self.max_item.setText(1, f"{v.getMeDataForPrinting()[1]:.2f}")
+            self.min_item.setText(1, f"{v.getMeDataForPrinting()[0]:.2f}")
 
     def mm_to_pixels(self, value):
         """
