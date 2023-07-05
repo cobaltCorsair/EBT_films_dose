@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from Axes import Ui_Form as Axes_form
+from ui.Axes import Ui_Form as Axes_form
 from PyQt5.QtCore import pyqtSignal
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

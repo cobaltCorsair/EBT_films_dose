@@ -1,7 +1,7 @@
 from PyQt5 import QtWidgets
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from Curve import Ui_Form as Curve_form
+from ui.Curve import Ui_Form as Curve_form
 from PyQt5.QtCore import pyqtSignal
 import matplotlib.pyplot as plt
 from DosesAndPaths import DosesAndPaths
