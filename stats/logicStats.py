@@ -58,7 +58,7 @@ class universalStats(object):
         if self.__dict__['kind'] == universalFunctions.polynomial:
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
-                print(type(self.data), self.data, self.data(0))
+                #print(type(self.data), self.data, self.data(0))
             except RuntimeError:
                 self.data = np.poly1d([1, 0, 0, 0])
 
