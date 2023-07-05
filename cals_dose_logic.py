@@ -159,7 +159,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.pic_ax = ax
 
         self.RS = RectangleSelector(ax, self.line_select_callback,
-                                    drawtype='box', useblit=False, button=[1],
+                                    useblit=False, button=[1],
                                     minspanx=5, minspany=5, spancoords='pixels',
                                     interactive=True)
 

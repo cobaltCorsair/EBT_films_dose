@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-from backports import configparser
+import configparser
 import os
 
 path = r'db_config.ini'

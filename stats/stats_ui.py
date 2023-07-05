@@ -229,7 +229,20 @@ class PanelWindow(QWidget):
         #    mvdx = np.arange(0, len(final_slice_values))
 
         if self.gauss_checked:
-            v = s(np.array([mvdx, final_slice_values]), u.gauss, basisFormatter=DosesAndPaths.basis_formatter)
+            try:
+                v = s(
+                    np.array([mvdx, final_slice_values]), 
+                    u.gauss, 
+                    basisFormatter=DosesAndPaths.basis_formatter)
+            except ValueError:
+                r = int(final_slice_values.shape[0])*DosesAndPaths.basis_formatter
+                v = s(
+                    np.array([
+                        np.arange(0, r, DosesAndPaths.basis_formatter), 
+                        final_slice_values
+                    ]),
+                    u.gauss,                    
+                    basisFormatter=DosesAndPaths.basis_formatter)
             v.run()
             cfs, errs = v.getMeDataForPrinting()
             try:
@@ -241,16 +254,43 @@ class PanelWindow(QWidget):
             self.plot_additional_data(ax, v)
 
         if self.poly_checked:
-            v = s(np.array([mvdx, final_slice_values]), u.polynomial, basisFormatter=DosesAndPaths.basis_formatter)
+            try:
+                v = s(
+                    np.array([mvdx, final_slice_values]), 
+                    u.polynomial, 
+                    basisFormatter=DosesAndPaths.basis_formatter)
+            except ValueError:
+                r = int(final_slice_values.shape[0])*DosesAndPaths.basis_formatter
+                v = s(
+                    np.array([
+                        np.arange(0, r, DosesAndPaths.basis_formatter), 
+                        final_slice_values
+                    ]),
+                    u.polynomial,                    
+                    basisFormatter=DosesAndPaths.basis_formatter)
             v.run()
             cfs = v.getMeDataForPrinting()
-            self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
-            self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
-            self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
-            self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
+            self.cf_items[0].setText(1, f"{cfs[0]:.5f}")
+            self.cf_items[1].setText(1, f"{cfs[1]:.5f}")
+            self.cf_items[2].setText(1, f"{cfs[2]:.5f}")
+            self.cf_items[3].setText(1, f"{cfs[3]:.5f}")
             self.plot_additional_data(ax, v)
 
-        v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+        #v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+        try:
+            v = s(
+                    np.array([mvdx, final_slice_values]), 
+                    u.basic, 
+                    basisFormatter=DosesAndPaths.basis_formatter)
+        except ValueError:
+            r = int(final_slice_values.shape[0])*DosesAndPaths.basis_formatter
+            v = s(
+                    np.array([
+                        np.arange(0, r, DosesAndPaths.basis_formatter), 
+                        final_slice_values
+                    ]),
+                    u.basic,                    
+                    basisFormatter=DosesAndPaths.basis_formatter)
         v.run()
         self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
         self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")

@@ -97,7 +97,10 @@ class universalStats(object):
             else:
                 newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
                 newFX = np.linspace(self.x[0], self.x[-1], 10000)
-            return newX, self.__dict__['fitFunc'](newFX, *self.data[0])
+            try:
+                return newX, self.__dict__['fitFunc'](newFX, *self.data[0])
+            except TypeError:
+                return newX, self.__dict__['fitFunc'](newFX, *self.basicAssumptions)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
             if self.__dict__['isNoneObject']:
                 newX = np.linspace(self.x[0], self.x[-1], 10000)
