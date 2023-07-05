@@ -126,8 +126,16 @@ class PanelWindow(QWidget):
             self.poly_checked = not hidden
             if hidden:
                 self.handle_unchecked()
+                self.cf_items[0].setHidden(True)
+                self.cf_items[1].setHidden(True)
+                self.cf_items[2].setHidden(True)
+                self.cf_items[3].setHidden(True)
             elif not hidden:
                 self.handle_checked()
+                self.cf_items[0].setHidden(False)
+                self.cf_items[1].setHidden(False)
+                self.cf_items[2].setHidden(False)
+                self.cf_items[3].setHidden(False)
             self.handle_data_changed(self.position)
 
 
@@ -233,6 +241,8 @@ class PanelWindow(QWidget):
                 self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
                 self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
                 self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
+                self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
+                self.plot_additional_data(ax, v)
 
         v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
         v.run()

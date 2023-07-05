@@ -35,7 +35,7 @@ class universalStats(object):
             self.basicAssumptions = 3
             self.x = x
             self.y = y
-            self.__dict__['fitFunc'] = polyFit
+            self.__dict__['fitFunc'] = np.poly1d
             self.__dict__['callFunc'] = preparePolyFit
 
         elif kind == universalFunctions.basic:
@@ -44,6 +44,8 @@ class universalStats(object):
             self.basicAssumptions = 3
             self.x = x
             self.y = y
+
+        self.data = None
 
     def run(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
@@ -56,18 +58,22 @@ class universalStats(object):
         if self.__dict__['kind'] == universalFunctions.polynomial:
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
+                print(type(self.data), self.data, self.data(0))
             except RuntimeError:
-                self.data = None
+                self.data = np.poly1d([1, 0, 0, 0])
 
     def axisHelper(self, value):
         return np.round(value / self.__dict__['basisFormatter'])
 
     def getMeDataForMatplotlibPlot(self):
-        if self.__dict__['kind'] == universalFunctions.gauss or \
-                self.__dict__['kind'] == universalFunctions.polynomial:
+        if self.__dict__['kind'] == universalFunctions.gauss:
             newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
             newFX = np.linspace(self.x[0], self.x[-1], 10000)
             return newX, self.__dict__['fitFunc'](newFX, *self.data[0])
+        elif self.__dict__['kind'] == universalFunctions.polynomial:
+            newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
+            newFX = np.linspace(self.x[0], self.x[-1], 10000)
+            return newX, self.data(newFX)
 
     def getMeDataForPrinting(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
@@ -75,7 +81,7 @@ class universalStats(object):
         elif self.__dict__['kind'] == universalFunctions.basic:
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
-            return self.data[0], self.data[1], self.data[2]
+            return self.data[0], self.data[1], self.data[2], self.data[3]
 
 
 def gauss(x, *p):
