@@ -43,7 +43,6 @@ class universalStats(object):
             else:
                 x = obj[0, :]
                 y = obj[1, :]
-            y = obj[1, :]
             self.basicAssumptions = 3
             self.x = x
             self.y = y
