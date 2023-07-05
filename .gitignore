@@ -128,11 +128,17 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-.vs
+.vscode/
 
-.idea
+.vs/
 
-build
-dist
+.idea/
+
+build/
+dist/
 
 *.exe
+
+launch.json
+
+CMakeSettings.json
