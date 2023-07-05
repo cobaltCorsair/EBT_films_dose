@@ -3,23 +3,16 @@
 import importlib
 import os
 import sys
-import json
-import ctypes
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox, QCheckBox
+from PyQt5.QtWidgets import QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
-from calibrate_list import Ui_Form
-from Axes import Ui_Form as Axes_form
-from Curve import Ui_Form as Curve_form
-from Values import Ui_Form as Values_form
-from DB_and_settings import Ui_Form as DB_form
+from IsAdmin import IsAdmin
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
@@ -32,12 +25,9 @@ import SaveLoadData as sld
 from DatabaseAndSettings import DatabaseAndSettings
 import DatabaseAndSettings as das
 from Warnings import Warnings
-from ValuesWindow import ValuesWindow
-from CurveWindow import CurveWindow
 from Form import Form
 import Form as fm
 from AxesWindow import AxesWindow
-from stats import stats_ui
 
 plt.switch_backend('agg')
 
@@ -445,22 +435,6 @@ class CalcUI(QtWidgets.QMainWindow):
         if DosesAndPaths.curve_object is not None and DosesAndPaths.irrad_film_file is not None \
                 and DosesAndPaths.empty_field_file is not None and DosesAndPaths.irrad_film_array_original is not None:
             return True
-
-
-class IsAdmin:
-    """
-    A class for detecting administrator rights
-    """
-
-    @staticmethod
-    def check_admin():
-        try:
-            is_admin = os.getuid() == 0
-        except AttributeError:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-
-        if is_admin:
-            Warnings.error_if_is_admin()
 
 
 if __name__ == "__main__":
