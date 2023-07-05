@@ -129,3 +129,10 @@ dmypy.json
 .pyre/
 
 .vs
+
+.idea
+
+build
+dist
+
+*.exe
