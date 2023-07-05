@@ -25,7 +25,6 @@ import SaveLoadData as sld
 from DatabaseAndSettings import DatabaseAndSettings
 import DatabaseAndSettings as das
 from Warnings import Warnings
-from Form import Form
 import Form as fm
 from AxesWindow import AxesWindow
 
@@ -269,7 +268,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Show dialog window with doses and paths
         """
-        self.form = Form()
+        self.form = fm.Form()
         self.form.create_widgets_second_open()
         self.form.insert_data_in_fields()
         self.form.show()
