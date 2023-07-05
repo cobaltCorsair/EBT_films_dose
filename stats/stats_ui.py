@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QTreeWidget, QTreeWidgetItem, QMenu
 from PyQt5.QtCore import Qt
-from doses_and_pathes import DosesAndPaths
+from DosesAndPaths import DosesAndPaths
 from stats import logicStats
 import numpy as np
 
