@@ -15,6 +15,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
+from calibrate_list import Ui_Form
+from Axes import Ui_Form as Axes_form
+from Curve import Ui_Form as Curve_form
+from Values import Ui_Form as Values_form
+from DB_and_settings import Ui_Form as DB_form
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
@@ -32,6 +37,7 @@ from CurveWindow import CurveWindow
 from Form import Form
 import Form as fm
 from AxesWindow import AxesWindow
+from stats import stats_ui
 
 plt.switch_backend('agg')
 
@@ -458,6 +464,14 @@ class IsAdmin:
 
         if is_admin:
             Warnings.error_if_is_admin()
+
+
+class GraphsStatistics:
+    """
+    Print stats on the left/right windows
+    """
+    def __init__(self):
+        pass
 
 
 if __name__ == "__main__":
