@@ -58,4 +58,3 @@ class GraphicsPlotting:
         ax.set_ylabel('Absorbed dose, Gy')
         ax.set_xlabel('Relative optical density')
         canvas_graph.draw()
-

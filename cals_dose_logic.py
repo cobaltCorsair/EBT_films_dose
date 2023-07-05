@@ -447,9 +447,6 @@ class CalcUI(QtWidgets.QMainWindow):
             return True
 
 
-
-
-
 class IsAdmin:
     """
     A class for detecting administrator rights
@@ -464,14 +461,6 @@ class IsAdmin:
 
         if is_admin:
             Warnings.error_if_is_admin()
-
-
-class GraphsStatistics:
-    """
-    Print stats on the left/right windows
-    """
-    def __init__(self):
-        pass
 
 
 if __name__ == "__main__":
