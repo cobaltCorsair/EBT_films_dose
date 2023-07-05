@@ -12,7 +12,7 @@ from PyQt5.QtWidgets import QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
-from Dose import Ui_MainWindow
+from ui.Dose import Ui_MainWindow
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
