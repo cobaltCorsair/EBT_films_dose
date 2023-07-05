@@ -20,9 +20,15 @@ class universalStats(object):
         self.__dict__['kind'] = kind
         # self.__dict__['dpi'] = dpi
         self.__dict__['basisFormatter'] = kwargs.get("basisFormatter", 25.4 / dpi)
+        self.__dict__['isNoneObject'] = False
         if kind == universalFunctions.gauss:
-            x = obj[0, :]
-            y = obj[1, :]
+            if obj[0] is None:
+                x = np.arange(0, obj[1].shape[0])
+                self.__dict__['isNoneObject'] = True
+                y = obj[1]
+            else:
+                x = obj[0, :]
+                y = obj[1, :]
             self.basicAssumptions = [0.5 * np.max(y), 0.5 * np.max(x), 1.0]
             self.x = x
             self.y = y
@@ -30,7 +36,13 @@ class universalStats(object):
             self.__dict__['callFunc'] = prepareGaussOwnX
 
         elif kind == universalFunctions.polynomial:
-            x = obj[0, :]
+            if obj[0] is None:
+                x = np.arange(0, obj[1].shape[0])
+                self.__dict__['isNoneObject'] = True
+                y = obj[1]
+            else:
+                x = obj[0, :]
+                y = obj[1, :]
             y = obj[1, :]
             self.basicAssumptions = 3
             self.x = x
@@ -39,8 +51,13 @@ class universalStats(object):
             self.__dict__['callFunc'] = preparePolyFit
 
         elif kind == universalFunctions.basic:
-            x = obj[0, :]
-            y = obj[1, :]
+            if obj[0] is None:
+                x = np.arange(0, obj[1].shape[0])
+                self.__dict__['isNoneObject'] = True
+                y = obj[1]
+            else:
+                x = obj[0, :]
+                y = obj[1, :]
             self.basicAssumptions = 3
             self.x = x
             self.y = y
@@ -67,12 +84,20 @@ class universalStats(object):
 
     def getMeDataForMatplotlibPlot(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
-            newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
-            newFX = np.linspace(self.x[0], self.x[-1], 10000)
+            if self.__dict__['isNoneObject']:
+                newX = np.linspace(self.x[0], self.x[-1], 10000)
+                newFX = np.linspace(self.x[0], self.x[-1], 10000)
+            else:
+                newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
+                newFX = np.linspace(self.x[0], self.x[-1], 10000)
             return newX, self.__dict__['fitFunc'](newFX, *self.data[0])
         elif self.__dict__['kind'] == universalFunctions.polynomial:
-            newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
-            newFX = np.linspace(self.x[0], self.x[-1], 10000)
+            if self.__dict__['isNoneObject']:
+                newX = np.linspace(self.x[0], self.x[-1], 10000)
+                newFX = np.linspace(self.x[0], self.x[-1], 10000)
+            else:
+                newX = np.linspace(self.axisHelper(self.x[0]), self.axisHelper(self.x[-1]), 10000)
+                newFX = np.linspace(self.x[0], self.x[-1], 10000)
             return newX, self.data(newFX)
 
     def getMeDataForPrinting(self):

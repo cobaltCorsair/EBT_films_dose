@@ -213,6 +213,8 @@ class PanelWindow(QWidget):
 
         from .logicStats import universalFunctions as u
         from .logicStats import universalStats as s
+
+        mvdx = None
           
         if position == 'left':
             mvdx = self.axes_window.formatted_mvdx_x
@@ -223,32 +225,37 @@ class PanelWindow(QWidget):
             final_slice_values = DosesAndPaths.final_slice_values_y
             ax = self.axes_window.ax_y
 
-        if mvdx is not None:
-            if self.gauss_checked:
-                v = s(np.array([mvdx, final_slice_values]), u.gauss, basisFormatter=DosesAndPaths.basis_formatter)
-                v.run()
-                cfs, errs = v.getMeDataForPrinting()
+        #if mvdx is None:
+        #    mvdx = np.arange(0, len(final_slice_values))
+
+        if self.gauss_checked:
+            v = s(np.array([mvdx, final_slice_values]), u.gauss, basisFormatter=DosesAndPaths.basis_formatter)
+            v.run()
+            cfs, errs = v.getMeDataForPrinting()
+            try:
                 self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
                 self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
                 self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
-                self.plot_additional_data(ax, v)
+            except:
+                pass
+            self.plot_additional_data(ax, v)
 
-            if self.poly_checked:
-                v = s(np.array([mvdx, final_slice_values]), u.polynomial, basisFormatter=DosesAndPaths.basis_formatter)
-                v.run()
-                cfs = v.getMeDataForPrinting()
-                self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
-                self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
-                self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
-                self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
-                self.plot_additional_data(ax, v)
-
-            v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+        if self.poly_checked:
+            v = s(np.array([mvdx, final_slice_values]), u.polynomial, basisFormatter=DosesAndPaths.basis_formatter)
             v.run()
-            self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
-            self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")
-            self.max_item.setText(1, f"{v.getMeDataForPrinting()[1]:.2f}")
-            self.min_item.setText(1, f"{v.getMeDataForPrinting()[0]:.2f}")
+            cfs = v.getMeDataForPrinting()
+            self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
+            self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
+            self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
+            self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
+            self.plot_additional_data(ax, v)
+
+        v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)
+        v.run()
+        self.median_item.setText(1, f"{v.getMeDataForPrinting()[3]:.1f}")
+        self.mean_item.setText(1, f"{v.getMeDataForPrinting()[2]:.4f}")
+        self.max_item.setText(1, f"{v.getMeDataForPrinting()[1]:.2f}")
+        self.min_item.setText(1, f"{v.getMeDataForPrinting()[0]:.2f}")
 
     def mm_to_pixels(self, value):
         """
