@@ -12,6 +12,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
+from FileDialog import MyQFileDialog
 from IsAdmin import IsAdmin
 from database import db_connection
 from logicParser import LogicParser
@@ -279,8 +280,12 @@ class CalcUI(QtWidgets.QMainWindow):
         Search file any type
         :param file_type: type of file
         """
-        file_name = \
-            QFileDialog.getOpenFileName(self, 'Open file', '', file_type, None, QFileDialog.DontUseNativeDialog)[0]
+        file_name = MyQFileDialog.getOpenFileName(
+            parent=self,
+            caption='Open file',
+            filter=file_type,
+            options=QFileDialog.DontUseNativeDialog
+        )[0]
         return file_name
 
     def progress_bar_update(self, data):
