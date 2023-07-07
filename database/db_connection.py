@@ -38,3 +38,5 @@ class Connect:
         collection_tif_provider = config.get("Settings", "tifProvider")
 
         return [ip_address, db, collection_tif_provider]
+    
+connection = Connect()
