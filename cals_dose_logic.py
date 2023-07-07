@@ -432,7 +432,7 @@ class CalcUI(QtWidgets.QMainWindow):
         try:
             self.bd_win = DatabaseAndSettings()
             self.bd_win.show()
-        except e:
+        except:
             Warnings.error_database_is_empty()
 
     @staticmethod
