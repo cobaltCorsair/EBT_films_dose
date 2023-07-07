@@ -90,9 +90,9 @@ class Warnings:
     @staticmethod
     def error_database_is_empty():
         QMessageBox.information(None, "Data error", "<b>Your database connections seems down...</b><br><br>"
-                                                 "Seems that we cannot access your valid Mongo database"
+                                                 "Seems that we cannot access your valid Mongo database<br><br>"
                                                  "We are waiting or have been waited generic network error time "
-                                                 " (aboud 30s) and if we do not see your database is up, this button"
-                                                 " will be disabled for the application lifetime."
-                                                 "Ignore this if you intenionally want to use this program locally.",
+                                                 " (aboud 30s) and if we do not see your database is up, this button <br>"
+                                                 " will be disabled for the application lifetime. <br><br>"
+                                                 "Ignore this if you intenionally want to use this program locally. <br>If you see this in eligible machine, please contact the developers<br><br>",
                                 QMessageBox.Ok)        
