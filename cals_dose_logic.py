@@ -13,6 +13,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
+from FileDialog import MyQFileDialog
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
@@ -28,6 +29,7 @@ from Warnings import Warnings
 import Form as fm
 from AxesWindow import AxesWindow
 from stats import stats_ui
+from IsAdmin import IsAdmin
 
 plt.switch_backend('agg')
 
