@@ -3,6 +3,7 @@
 import importlib
 import os
 import sys
+import ctypes
 import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtGui import QIcon
@@ -12,8 +13,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
-from FileDialog import MyQFileDialog
-from IsAdmin import IsAdmin
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
@@ -26,9 +25,9 @@ import SaveLoadData as sld
 from DatabaseAndSettings import DatabaseAndSettings
 import DatabaseAndSettings as das
 from Warnings import Warnings
-from Form import Form
 import Form as fm
 from AxesWindow import AxesWindow
+from stats import stats_ui
 
 plt.switch_backend('agg')
 
@@ -270,7 +269,7 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Show dialog window with doses and paths
         """
-        self.form = Form()
+        self.form = fm.Form()
         self.form.create_widgets_second_open()
         self.form.insert_data_in_fields()
         self.form.show()
