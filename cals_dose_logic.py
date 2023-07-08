@@ -55,7 +55,7 @@ class CalcUI(QtWidgets.QMainWindow):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(e).__name__, e.args)
         print(message)
-        Warnings.error_database_is_empty()
+        Warnings.error_database_is_empty_readyfallback()
 
     HAND_SWITCH_MODE = True
 
