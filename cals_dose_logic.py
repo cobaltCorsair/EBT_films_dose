@@ -47,6 +47,7 @@ class CalcUI(QtWidgets.QMainWindow):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(e).__name__, e.args)
         print(message)
+        Warnings.error_database_is_empty_readyfallback()
 
     HAND_SWITCH_MODE = True
 
@@ -90,9 +91,16 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_3.clicked.connect(self.cropping_by_button)
         self.ui.pushButton_5.clicked.connect(SaveLoadData.save_as_excel_file)
 
-        self.ui.pushButton_2.setDisabled(True)
+        # @todo: implement 30 seconds timeout for connection as suggested in friendly messages
+        # issued by .exe strange behaviour
+        self.ui.pushButton_2.setDisabled(False)
         if CalcUI.connect:
-            self.ui.pushButton_2.setDisabled(False)
+            #self.ui.pushButton_2.setDisabled(False)
+            pass
+        else:
+            Warnings.error_database_is_empty()
+            self.ui.pushButton_2.setDisabled(True)
+            pass
 
         IsAdmin.check_admin()
 
@@ -162,7 +170,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.pic_ax = ax
 
         self.RS = RectangleSelector(ax, self.line_select_callback,
-                                    drawtype='box', useblit=False, button=[1],
+                                    useblit=False, button=[1],
                                     minspanx=5, minspany=5, spancoords='pixels',
                                     interactive=True)
 
@@ -423,8 +431,11 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         Show dialog window with db and settings
         """
-        self.bd_win = DatabaseAndSettings()
-        self.bd_win.show()
+        try:
+            self.bd_win = DatabaseAndSettings()
+            self.bd_win.show()
+        except:
+            Warnings.error_database_is_empty()
 
     @staticmethod
     def check_fields_manual_mode():

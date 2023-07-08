@@ -1,5 +1,8 @@
 from pymongo import MongoClient
-from backports import configparser
+try :
+    from backports import configparser
+except ModuleNotFoundError:
+    import configparser
 import os
 
 path = r'db_config.ini'
@@ -35,3 +38,5 @@ class Connect:
         collection_tif_provider = config.get("Settings", "tifProvider")
 
         return [ip_address, db, collection_tif_provider]
+    
+connection = Connect()
