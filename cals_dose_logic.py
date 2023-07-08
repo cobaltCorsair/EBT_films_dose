@@ -273,7 +273,12 @@ class CalcUI(QtWidgets.QMainWindow):
 
     def select_filter(self):
         """For test"""
-        print(self.ui.comboBox.currentText(), Filters.__dict__[self.ui.comboBox.currentText()])
+        import pprint
+        from io import StringIO
+        s = StringIO.StringIO()
+        pprint.pprint(Filters.__dict__, s)
+        s.replace(self.ui.comboBox.currentText(), "")
+        print(s)
 
     def get_dialog_window(self):
         """
@@ -356,7 +361,6 @@ class CalcUI(QtWidgets.QMainWindow):
             except ValueError:
                 Warnings.error_incorrect_value()
 
-        # Todo: убрать вывод названия фильтра по кнопке "Calc" после имплементации ф-ции
         self.select_filter()
 
     def calc_from_manual(self):
