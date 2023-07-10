@@ -7,6 +7,8 @@ from scipy.optimize import curve_fit
 from GraphicsPlotting import GraphicsPlotting
 
 
+application = None
+
 class Dose(QThread):
     """
     Calculate dose
@@ -167,11 +169,11 @@ class Dose(QThread):
 
                 counter = counter + 1
                 if counter % 10000 == 0:
-                    print("Iteration ", counter, "/", np.size(CalcUI.choose_orig_or_crop()))
+                    print("Iteration ", counter, "/", np.size(application.choose_orig_or_crop()))
                     progress += 1
                     self.progressChanged.emit(round(progress))
 
-            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(CalcUI.choose_orig_or_crop()))
+            DosesAndPaths.z = DosesAndPaths.z.reshape(np.shape(application.choose_orig_or_crop()))
             print("\nDose calculation ended!!!\n")
             self.progressChanged.emit(100)
             GraphicsPlotting().draw_dose_map(DosesAndPaths.z)

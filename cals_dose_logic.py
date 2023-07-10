@@ -20,7 +20,7 @@ from filters import Filters, Filter
 from DosesAndPaths import DosesAndPaths
 from GraphicsPlotting import GraphicsPlotting
 import GraphicsPlotting as gp
-from DoseClass import Dose
+import DoseClass as dc
 from SaveLoadData import SaveLoadData
 import SaveLoadData as sld
 from DatabaseAndSettings import DatabaseAndSettings
@@ -115,7 +115,7 @@ class CalcUI(QtWidgets.QMainWindow):
 
         if len(self.ui.lineEdit_3.text()) != 0:
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
-            DosesAndPaths.irrad_film_array_original = Dose.get_imarray(DosesAndPaths.irrad_film_file)
+            DosesAndPaths.irrad_film_array_original = dc.Dose.get_imarray(DosesAndPaths.irrad_film_file)
             self.ui.lineEdit_3.setDisabled(True)
             self.insert_tiff_file()
         else:
@@ -471,6 +471,7 @@ if __name__ == "__main__":
     sld.application = application
     das.application = application
     fm.application = application
+    dc.application = application
     application.setWindowTitle("Dose calculator")
     # set minimum size
     application.setMinimumSize(1200, 800)
