@@ -95,7 +95,7 @@ class CalcUI(QtWidgets.QMainWindow):
         # issued by .exe strange behaviour
         self.ui.pushButton_2.setDisabled(False)
         if CalcUI.connect:
-            #self.ui.pushButton_2.setDisabled(False)
+            # self.ui.pushButton_2.setDisabled(False)
             pass
         else:
             Warnings.error_database_is_empty()
@@ -364,10 +364,10 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.get_dpi_value()
         DosesAndPaths.z = list()
-        self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
-                           DosesAndPaths.paths, DosesAndPaths.doses,
-                           DosesAndPaths.irrad_film_file,
-                           DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
+        self.thread = dc.Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
+                              DosesAndPaths.paths, DosesAndPaths.doses,
+                              DosesAndPaths.irrad_film_file,
+                              DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
         self.thread.start()
         self.thread.progressChanged.connect(self.progress_bar_update)
 
