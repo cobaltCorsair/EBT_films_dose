@@ -273,12 +273,7 @@ class CalcUI(QtWidgets.QMainWindow):
 
     def select_filter(self):
         """For test"""
-        import pprint
-        from io import StringIO
-        s = StringIO.StringIO()
-        pprint.pprint(Filters.__dict__, s)
-        s.replace(self.ui.comboBox.currentText(), "")
-        print(s)
+        return
 
     def get_dialog_window(self):
         """
