@@ -171,6 +171,29 @@ class LogicParser(object):
             return self.scikitmodel.predict(od2)
         pass
 
+    @staticmethod
+    def getNormalizedByZone(initial, x=0, y=0, w=1, h=1, cf=1.0):
+        '''
+        Function normalizes initial array on the new average in zone [x:x+w, y:y+h]
+        @param initial: initial array
+        @type initial: np.ndarray
+        @param x: x corner of target slice
+        @type x: int
+        @param y: y corner of target slice
+        @type y: int
+        @param w: width of target slice
+        @type w: int
+        @param h: height of target slice
+        @type h: int
+        @param cf: target value
+        @type cf: float
+        @return: renozmalized array
+        @rtype: np.ndarray
+        '''
+        sliceArr = initial[x:x+w, y:y+h]
+        sliceAvg = np.average(sliceArr)
+        return initial * cf / sliceAvg
+
 if __name__ == '__main__':
     from database import dbProxy
     from pymongo import MongoClient
