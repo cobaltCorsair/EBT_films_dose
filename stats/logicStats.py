@@ -109,10 +109,12 @@ class universalStats(object):
 
     def getMeDataForPrinting(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
-            return self.data[0], self.data[1]
+            return ([*self.data[0], 2.0*np.sqrt(2*np.log(2))*self.data[0][2]],
+                    [*self.data[1], 2.0*np.sqrt(2*np.log(2))*self.data[1][2]])
         elif self.__dict__['kind'] == universalFunctions.basic:
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
+            print(self.data)
             return self.data[0], self.data[1], self.data[2], self.data[3]
 
 
