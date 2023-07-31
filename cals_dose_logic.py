@@ -3,35 +3,33 @@
 import importlib
 import os
 import sys
-import json
 import ctypes
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog, QLineEdit, QDoubleSpinBox, QMessageBox, QCheckBox
+from PyQt5.QtWidgets import QFileDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
 from Dose import Ui_MainWindow
+from FileDialog import MyQFileDialog
 from database import db_connection
 from logicParser import LogicParser
 from filters import Filters, Filter
 from DosesAndPaths import DosesAndPaths
 from GraphicsPlotting import GraphicsPlotting
 import GraphicsPlotting as gp
-from DoseClass import Dose
+import DoseClass as dc
 from SaveLoadData import SaveLoadData
 import SaveLoadData as sld
 from DatabaseAndSettings import DatabaseAndSettings
 import DatabaseAndSettings as das
 from Warnings import Warnings
-from ValuesWindow import ValuesWindow
-from CurveWindow import CurveWindow
-from Form import Form
 import Form as fm
 from AxesWindow import AxesWindow
+from stats import stats_ui
+from IsAdmin import IsAdmin
 
 plt.switch_backend('agg')
 
@@ -49,7 +47,7 @@ class CalcUI(QtWidgets.QMainWindow):
         template = "An exception of type {0} occurred. Arguments:\n{1!r}"
         message = template.format(type(e).__name__, e.args)
         print(message)
-        Warnings.error_database_is_empty()
+        Warnings.error_database_is_empty_readyfallback()
 
     HAND_SWITCH_MODE = True
 
@@ -97,7 +95,7 @@ class CalcUI(QtWidgets.QMainWindow):
         # issued by .exe strange behaviour
         self.ui.pushButton_2.setDisabled(False)
         if CalcUI.connect:
-            #self.ui.pushButton_2.setDisabled(False)
+            # self.ui.pushButton_2.setDisabled(False)
             pass
         else:
             Warnings.error_database_is_empty()
@@ -117,7 +115,7 @@ class CalcUI(QtWidgets.QMainWindow):
 
         if len(self.ui.lineEdit_3.text()) != 0:
             DosesAndPaths.irrad_film_file = self.ui.lineEdit_3.text()
-            DosesAndPaths.irrad_film_array_original = Dose.get_imarray(DosesAndPaths.irrad_film_file)
+            DosesAndPaths.irrad_film_array_original = dc.Dose.get_imarray(DosesAndPaths.irrad_film_file)
             self.ui.lineEdit_3.setDisabled(True)
             self.insert_tiff_file()
         else:
@@ -275,13 +273,13 @@ class CalcUI(QtWidgets.QMainWindow):
 
     def select_filter(self):
         """For test"""
-        print(self.ui.comboBox.currentText(), Filters.__dict__[self.ui.comboBox.currentText()])
+        return
 
     def get_dialog_window(self):
         """
         Show dialog window with doses and paths
         """
-        self.form = Form()
+        self.form = fm.Form()
         self.form.create_widgets_second_open()
         self.form.insert_data_in_fields()
         self.form.show()
@@ -291,8 +289,12 @@ class CalcUI(QtWidgets.QMainWindow):
         Search file any type
         :param file_type: type of file
         """
-        file_name = \
-            QFileDialog.getOpenFileName(self, 'Open file', '', file_type, None, QFileDialog.DontUseNativeDialog)[0]
+        file_name = MyQFileDialog.getOpenFileName(
+            parent=self,
+            caption='Open file',
+            filter=file_type,
+            options=QFileDialog.DontUseNativeDialog
+        )[0]
         return file_name
 
     def progress_bar_update(self, data):
@@ -354,7 +356,6 @@ class CalcUI(QtWidgets.QMainWindow):
             except ValueError:
                 Warnings.error_incorrect_value()
 
-        # Todo: убрать вывод названия фильтра по кнопке "Calc" после имплементации ф-ции
         self.select_filter()
 
     def calc_from_manual(self):
@@ -363,10 +364,10 @@ class CalcUI(QtWidgets.QMainWindow):
         """
         self.get_dpi_value()
         DosesAndPaths.z = list()
-        self.thread = Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
-                           DosesAndPaths.paths, DosesAndPaths.doses,
-                           DosesAndPaths.irrad_film_file,
-                           DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
+        self.thread = dc.Dose(DosesAndPaths.empty_scanner_field_file, DosesAndPaths.empty_field_file,
+                              DosesAndPaths.paths, DosesAndPaths.doses,
+                              DosesAndPaths.irrad_film_file,
+                              DosesAndPaths.sigma, DosesAndPaths.fit_func_type)
         self.thread.start()
         self.thread.progressChanged.connect(self.progress_bar_update)
 
@@ -452,22 +453,6 @@ class CalcUI(QtWidgets.QMainWindow):
             return True
 
 
-class IsAdmin:
-    """
-    A class for detecting administrator rights
-    """
-
-    @staticmethod
-    def check_admin():
-        try:
-            is_admin = os.getuid() == 0
-        except AttributeError:
-            is_admin = ctypes.windll.shell32.IsUserAnAdmin() != 0
-
-        if is_admin:
-            Warnings.error_if_is_admin()
-
-
 if __name__ == "__main__":
     if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
         import pyi_splash
@@ -486,6 +471,7 @@ if __name__ == "__main__":
     sld.application = application
     das.application = application
     fm.application = application
+    dc.application = application
     application.setWindowTitle("Dose calculator")
     # set minimum size
     application.setMinimumSize(1200, 800)

@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from DB_and_settings import Ui_Form as DB_form
+from ui.DB_and_settings import Ui_Form as DB_form
 from PyQt5.QtCore import pyqtSignal
 from database import dbProxy as db
 from database import db_connection

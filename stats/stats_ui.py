@@ -61,6 +61,11 @@ class PanelWindow(QWidget):
         self.mu_item.setText(1, "0")
         self.mu_item.setHidden(True)
 
+        self.fwhm_item = QTreeWidgetItem(self.gauss_item)
+        self.fwhm_item.setText(0, "FWHM")
+        self.fwhm_item.setText(1, "0")
+        self.fwhm_item.setHidden(True)
+
         self.poly_item = QTreeWidgetItem(self.tree)
         self.poly_item.setText(0, "Polynomial N")
         self.poly_item.setCheckState(0, Qt.Unchecked)
@@ -115,11 +120,13 @@ class PanelWindow(QWidget):
                 self.constant_item.setHidden(True)
                 self.sigma_item.setHidden(True)
                 self.mu_item.setHidden(True)
+                self.fwhm_item.setHidden(True)
             elif not hidden:
                 self.handle_checked()
                 self.constant_item.setHidden(False)
                 self.sigma_item.setHidden(False)
                 self.mu_item.setHidden(False)
+                self.fwhm_item.setHidden(False)
             self.handle_data_changed(self.position)
         if column == 0 and item == self.poly_item:
             hidden = item.checkState(0) == Qt.Unchecked
@@ -236,6 +243,7 @@ class PanelWindow(QWidget):
                 self.constant_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
                 self.mu_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
                 self.sigma_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+                self.fwhm_item.setText(1, f"{cfs[3]:.3f} ± {errs[3]:.3f}")
             except:
                 pass
             self.plot_additional_data(ax, v)
@@ -244,10 +252,10 @@ class PanelWindow(QWidget):
             v = s(np.array([mvdx, final_slice_values]), u.polynomial, basisFormatter=DosesAndPaths.basis_formatter)
             v.run()
             cfs = v.getMeDataForPrinting()
-            self.cf_items[0].setText(1, f"{cfs[0]:.3f}")
-            self.cf_items[1].setText(1, f"{cfs[1]:.3f}")
-            self.cf_items[2].setText(1, f"{cfs[2]:.3f}")
-            self.cf_items[3].setText(1, f"{cfs[3]:.3f}")
+            self.cf_items[0].setText(1, f"{cfs[0]:.4f}")
+            self.cf_items[1].setText(1, f"{cfs[1]:.4e}")
+            self.cf_items[2].setText(1, f"{cfs[2]:.4e}")
+            self.cf_items[3].setText(1, f"{cfs[3]:.4e}")
             self.plot_additional_data(ax, v)
 
         v = s(np.array([mvdx, final_slice_values]), u.basic, basisFormatter=DosesAndPaths.basis_formatter)

@@ -4,6 +4,7 @@ import json
 import os
 from Warnings import Warnings
 import pandas
+from FileDialog import MyQFileDialog
 
 application = None
 
@@ -37,10 +38,9 @@ class SaveLoadData:
         :param file_name: name of the file to be saved
         :param data: json object
         """
-        filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list',
-                                                  file_name + '.json',
-                                                  'JSON files (*.json);;all files(*.*)',
-                                                  options=QFileDialog.DontUseNativeDialog)
+        filename, _ = MyQFileDialog.getSaveFileName(file_name + '.json', None, 'Save calibrate setting or list',
+                                                    filter='JSON files (*.json);;all files(*.*)',
+                                                    options=QFileDialog.DontUseNativeDialog)
         if filename is not '':
             try:
                 with open(filename, 'w', encoding='utf-8') as outfile:
@@ -128,9 +128,9 @@ class SaveLoadData:
         if len(DosesAndPaths.z) > 0:
             dataframe_array = pandas.DataFrame(DosesAndPaths.z)
 
-            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', 'dose_data',
-                                                      'Excel Files (*.xlsx);;all files(*.*)',
-                                                      options=QFileDialog.DontUseNativeDialog)
+            filename, _ = MyQFileDialog.getSaveFileName('dose_data', None, 'Save calibrate setting or list',
+                                                        filter='Excel Files (*.xlsx);;all files(*.*)',
+                                                        options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
                 try:
                     dataframe_array.to_excel(excel_writer=filename + '.xlsx')
@@ -154,9 +154,9 @@ class SaveLoadData:
             else:
                 ax_dataframe = pandas.DataFrame(ax)
 
-            filename, _ = QFileDialog.getSaveFileName(None, 'Save calibrate setting or list', ax_name,
-                                                      'Excel Files (*.xlsx);;all files(*.*)',
-                                                      options=QFileDialog.DontUseNativeDialog)
+            filename, _ = MyQFileDialog.getSaveFileName(ax_name, None, 'Save calibrate setting or list',
+                                                        filter='Excel Files (*.xlsx);;all files(*.*)',
+                                                        options=QFileDialog.DontUseNativeDialog)
             if filename is not '':
                 try:
                     ax_dataframe.to_excel(excel_writer=filename + '.xlsx')

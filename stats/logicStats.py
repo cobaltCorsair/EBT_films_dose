@@ -17,8 +17,16 @@ class universalFunctions(enum.Enum):
 
 class universalStats(object):
     def __init__(self, obj, kind=universalFunctions.gauss, dpi=150, **kwargs):
+        """
+        @param obj: 2-dimensional array, where obj[0, :] treated as x and obj[1, :] treated as A
+        @type obj: Union(Any, Any)
+        @param kind: тип статистики
+        @type kind:universalFunctions
+        @param dpi: dpi изображения, если задан keyword-аргумент basisFormatter, то игнорируется
+        @keyword basisFormatter: параметр скалирования оси X
+        """
         self.__dict__['kind'] = kind
-        # self.__dict__['dpi'] = dpi
+        #self.__dict__['dpi'] = dpi
         self.__dict__['basisFormatter'] = kwargs.get("basisFormatter", 25.4 / dpi)
         self.__dict__['isNoneObject'] = False
         if kind == universalFunctions.gauss:
@@ -70,7 +78,7 @@ class universalStats(object):
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
             except RuntimeError:
-                self.data = self.basicAssumptions
+                self.data = self.basicAssumptions, [0.0, 0.0, 0.0]
         if self.__dict__['kind'] == universalFunctions.polynomial:
             try:
                 self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
@@ -101,10 +109,12 @@ class universalStats(object):
 
     def getMeDataForPrinting(self):
         if self.__dict__['kind'] == universalFunctions.gauss:
-            return self.data[0], self.data[1]
+            return ([*self.data[0], 2.0*np.sqrt(2*np.log(2))*self.data[0][2]],
+                    [*self.data[1], 2.0*np.sqrt(2*np.log(2))*self.data[1][2]])
         elif self.__dict__['kind'] == universalFunctions.basic:
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
+            print(self.data)
             return self.data[0], self.data[1], self.data[2], self.data[3]
 
 
@@ -143,7 +153,7 @@ def vmin(x):
     return np.min(x)
 
 
-def prepareGauss(x, p0=[1., 0., 1.]):
+def prepareGauss(x, p0 = [1., 0., 1.]):
     """
     Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x
     @param x:
@@ -156,12 +166,12 @@ def prepareGauss(x, p0=[1., 0., 1.]):
     cfs, variation = curve_fit(gauss, centres, hist, p0=p0)
     errs = np.sqrt(np.diag(variation))
 
-    # hist_fit = gauss(centres, *cfs)
+    #hist_fit = gauss(centres, *cfs)
 
-    return (cfs, errs,)
+    return (cfs, errs, )
 
 
-def prepareGaussOwnX(newX, x, p0=[1., 0., 1.]):
+def prepareGaussOwnX(newX, x, p0 = [1., 0., 1.]):
     """
     Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x с адресацией
     точек массива по newX

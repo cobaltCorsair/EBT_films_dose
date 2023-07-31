@@ -1,5 +1,5 @@
 from PyQt5 import QtWidgets
-from Values import Ui_Form as Values_form
+from ui.Values import Ui_Form as Values_form
 
 class ValuesWindow(QtWidgets.QWidget, Values_form):
     """

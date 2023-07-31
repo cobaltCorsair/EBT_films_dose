@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets
-from calibrate_list import Ui_Form
+from FileDialog import MyQFileDialog
+from ui.calibrate_list import Ui_Form
 from SaveLoadData import SaveLoadData
 from PyQt5.QtWidgets import QFileDialog, QCheckBox, QLineEdit, QDoubleSpinBox
 from DosesAndPaths import DosesAndPaths
@@ -38,8 +39,12 @@ class Form(QtWidgets.QWidget, Ui_Form):
         """
         Search file
         """
-        file_name = \
-            QFileDialog.getOpenFileName(self, 'Open file', '', '*.tif', None, QFileDialog.DontUseNativeDialog)[0]
+        file_name = MyQFileDialog.getOpenFileName(
+            parent=self,
+            caption='Open file',
+            filter='*.tif',
+            options=QFileDialog.DontUseNativeDialog
+        )[0]
         return file_name
 
     def get_empty_field_file(self, line):
