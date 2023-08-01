@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PyQt5.QtGui import QIcon
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtWidgets import QFileDialog, QInputDialog
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
@@ -90,6 +90,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
         self.ui.pushButton_3.clicked.connect(self.cropping_by_button)
         self.ui.pushButton_5.clicked.connect(SaveLoadData.save_as_excel_file)
+        self.ui.pushButton_6.clicked.connect(self.normalize_by_selected_zone)
 
         # @todo: implement 30 seconds timeout for connection as suggested in friendly messages
         # issued by .exe strange behaviour
@@ -243,6 +244,30 @@ class CalcUI(QtWidgets.QMainWindow):
 
         self.start_pos = None
         self.end_pos = None
+
+    def normalize_by_selected_zone(self):
+        """
+        Normalize the image by the selected zone using the RectangleSelector extents
+        """
+        if self.start_pos is not None and self.end_pos is not None and self.start_pos[0] != self.end_pos[0]:
+            try:
+                if len(DosesAndPaths.z) == 0:
+                    raise TypeError
+
+                xmin, xmax, ymin, ymax = self.RS.extents
+                xmin, xmax, ymin, ymax = int(xmin), int(xmax), int(ymin), int(ymax)
+                cf, ok_pressed = QInputDialog.getDouble(self, "Get coefficient", "Value of cf:", 1, float('-inf'), float('inf'), 3)
+                if not ok_pressed:
+                    return
+
+                # Normalize the image using the selected zone (order for numpy array y, x, h, w)
+                normalized_image = LogicParser.getNormalizedByZone(DosesAndPaths.z, ymin, xmin,
+                                                                   ymax - ymin, xmax - xmin, cf=cf)
+                GraphicsPlotting.draw_dose_map(normalized_image)
+            except TypeError:
+                Warnings.inform_about_normalize()
+        else:
+            Warnings.inform_about_area()
 
     def onclick(self, event, ax):
         """

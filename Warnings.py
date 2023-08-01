@@ -37,6 +37,12 @@ class Warnings:
         return False
 
     @staticmethod
+    def inform_about_normalize():
+        QMessageBox.information(None, "Information", "<b>The dose should be pre-calculated</b><br>"
+                                                     "before normalizing the dose map to the allocated site",
+                                QMessageBox.Ok)
+
+    @staticmethod
     def inform_about_area():
         QMessageBox.information(None, "Information", "<b>Before cutting the film</b><br>"
                                                      "need to allocate an area for trimming",
