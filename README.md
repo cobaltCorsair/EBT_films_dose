@@ -40,3 +40,47 @@ The program is designed to process the results of radiochromic film dosimetry ob
 - **Calibration File Preparation**: Describes the process of preparing calibration files.
 - **Statistics Output Window**: Displays statistical data on distributions in sections.
 
+## Key Methods and Features
+
+### Main Interface and Database Connection
+
+- **Database Connection**: The program attempts to connect to the MongoDB database at startup.
+- **Main Interface**: Includes various UI elements, such as buttons, layout widgets, and a toolbar for image manipulation.
+
+### File Selection and Image Handling
+
+- **Irradiated Film File Selection**: `get_irrad_film_file` method allows selecting and inserting an irradiated film file in TIFF format.
+- **Empty Field File Selection**: `get_empty_field_file` method allows selecting and inserting an empty field file in TIFF format.
+- **Image Insertion**: `insert_tiff_file` method inserts a picture of the film into the interface window.
+- **Image Cropping**: `crop` and `cropping_by_button` methods allow cropping the image by selecting a specific area.
+
+### Calculation Modes and Filters
+
+- **Manual Calculation**: `calc_from_manual` method allows performing calculations manually.
+- **Database Calculation**: `calc_from_db` method allows performing calculations using data from a connected database.
+- **OD Only Calculation**: `calc_ODOnly` method sets z-data to a specific value for all data.
+- **Filter Application**: `add_filter` method allows adding a filter to an image.
+
+### Progress and Error Handling
+
+- **Progress Bar**: `progress_bar_update` method updates the progress bar during calculations.
+- **Error Handling**: Various warning messages inform the user about potential errors or issues.
+
+### Application Window Configuration
+
+- **Window Configuration**: The main application window is configured with a custom icon, title, and minimum size.
+
+### Running the Program
+
+The program can be run as a standalone application with the following code:
+
+```python
+if __name__ == "__main__":
+    app = QtWidgets.QApplication([])
+    app.setStyle("Fusion")
+    application = CalcUI()
+    application.setWindowTitle("Dose calculator")
+    application.setMinimumSize(1200, 800)
+    application.show()
+    sys.exit(app.exec())
+
