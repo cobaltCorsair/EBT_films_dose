@@ -4,6 +4,12 @@
 
 The program is designed to process the results of radiochromic film dosimetry obtained from 16-bit per channel TIF scans and translate the image into a dose field. The program supports manual input of the calibration curve, a calibration database, various curve fitting modes, and outputs orthogonal projections of the final dose field to a text file.
 
+## License
+
+This project is licensed under the MIT License.
+
+The MIT License is a short and simple permissive license with conditions only requiring preservation of copyright and license notices. Licensed works, modifications, and larger works may be distributed under different terms and without source code.
+
 ## Main Interface Elements
 
 - **Main Program Window**: Includes buttons for working with manual calibration, loading calibration from the database, and working with unirradiated film.
