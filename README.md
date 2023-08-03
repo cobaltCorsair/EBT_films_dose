@@ -6,9 +6,9 @@ The program is designed to process the results of radiochromic film dosimetry ob
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](https://github.com/cobaltCorsair/EBT_films_dose/blob/license/LICENSE) file for details.
 
-The MIT License is a short and simple permissive license with conditions only requiring preservation of copyright and license notices. Licensed works, modifications, and larger works may be distributed under different terms and without source code.
+The GNU General Public License v3.0 is a free, copyleft license for software and other kinds of works, designed to ensure that everyone has the freedom to distribute copies of free software (and charge for them if you wish), that you receive source code or can get it if you want it, that you can change the software or use pieces of it in new free programs, and that you know you can do these things.
 
 ## Main Interface Elements
 
