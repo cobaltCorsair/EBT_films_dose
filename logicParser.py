@@ -193,6 +193,11 @@ class LogicParser(object):
         sliceArr = initial[x:x+w, y:y+h]
         sliceAvg = np.average(sliceArr)
         return initial * cf / sliceAvg
+    
+    @staticmethod
+    def getCurrentAverageByZone(initial, x=0, y=0, w=1, h=1):
+        sliceArr = initial[x:x+w, y:y+h]
+        return np.average(sliceArr)
 
 if __name__ == '__main__':
     from database import dbProxy
