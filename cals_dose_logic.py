@@ -257,7 +257,15 @@ class CalcUI(QtWidgets.QMainWindow):
                 xmin, xmax, ymin, ymax = self.RS.extents
                 xmin, xmax, ymin, ymax = int(xmin), int(xmax), int(ymin), int(ymax)
                 curCf = LogicParser.getCurrentAverageByZone(DosesAndPaths.z, ymin, xmin, ymax - ymin, xmax - xmin)
-                cf, ok_pressed = QInputDialog.getDouble(self, "Get coefficient", "Value of cf:", curCf, float('-inf'), float('inf'), 3)
+                curMax = LogicParser.getCurrentMaximumByZone(DosesAndPaths.z, ymin, xmin, ymax - ymin, xmax - xmin)
+                curMin = LogicParser.getCurrentMinimumByZone(DosesAndPaths.z, ymin, xmin, ymax - ymin, xmax - xmin)
+                cf, ok_pressed = QInputDialog.getDouble(self,
+                                                        "Get coefficient",
+                                                        "Max: %1.4f\nMin: %1.4f\nValue of cf:" % (curMax, curMin, ),
+                                                        curCf,
+                                                        float('-inf'),
+                                                        float('inf'),
+                                                        3)
                 if not ok_pressed:
                     return
 

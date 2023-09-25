@@ -197,7 +197,18 @@ class LogicParser(object):
     @staticmethod
     def getCurrentAverageByZone(initial, x=0, y=0, w=1, h=1):
         sliceArr = initial[x:x+w, y:y+h]
-        return np.average(sliceArr)
+        return np.average(sliceArr.flatten())
+
+    @staticmethod
+    def getCurrentMaximumByZone(initial, x=0, y=0, w=1, h=1):
+        sliceArr = initial[x:x+w, y:y+h]
+        sliceArr = sliceArr.flatten()
+        return np.max(sliceArr)
+
+    @staticmethod
+    def getCurrentMinimumByZone(initial, x=0, y=0, w=1, h=1):
+        sliceArr = initial[x:x+w, y:y+h]
+        return np.min(sliceArr.flatten())
 
 if __name__ == '__main__':
     from database import dbProxy
