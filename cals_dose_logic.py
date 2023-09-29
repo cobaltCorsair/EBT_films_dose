@@ -272,7 +272,7 @@ class CalcUI(QtWidgets.QMainWindow):
                     return
 
                 # Normalize the image using the selected zone (order for numpy array y, x, h, w)
-                normalized_image = LogicParser.getNormalizedByZone(DosesAndPaths.z, ymin, xmin,
+                normalized_image = LogicParser.getNormalizedByZone(DosesAndPaths.z, ynmin, xnmin,
                                                                    ymax - ymin, xmax - xmin, cf=cf)
                 DosesAndPaths.z = normalized_image
                 GraphicsPlotting.draw_dose_map(normalized_image)
