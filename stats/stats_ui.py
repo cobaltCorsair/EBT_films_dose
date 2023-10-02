@@ -70,6 +70,31 @@ class PanelWindow(QWidget):
         self.poly_item.setText(0, "Polynomial N")
         self.poly_item.setCheckState(0, Qt.Unchecked)
 
+        self.gaussWithZero_item = QTreeWidgetItem(self.tree)
+        self.gaussWithZero_item.setText(0, "Gauss with y0")
+        self.gaussWithZero_item.setCheckState(0, Qt.Unchecked)
+
+        self.constantWithZero_item = QTreeWidgetItem(self.gaussWithZero_item)
+        self.constantWithZero_item.setText(0, "Constant")
+        self.constantWithZero_item.setText(1, "0")
+        self.constantWithZero_item.setHidden(True)
+        self.sigmaWithZero_item = QTreeWidgetItem(self.gaussWithZero_item)
+        self.sigmaWithZero_item.setText(0, "Sigma")
+        self.sigmaWithZero_item.setText(1, "0")
+        self.sigmaWithZero_item.setHidden(True)
+        self.muWithZero_item = QTreeWidgetItem(self.gaussWithZero_item)
+        self.muWithZero_item.setText(0, "Mu")
+        self.muWithZero_item.setText(1, "0")
+        self.muWithZero_item.setHidden(True)
+        self.ynodWithZero_item = QTreeWidgetItem(self.gaussWithZero_item)
+        self.ynodWithZero_item.setText(0, "y0")
+        self.ynodWithZero_item.setText(1, "0")
+        self.ynodWithZero_item.setHidden(True)
+        self.fwhmWithZero_item = QTreeWidgetItem(self.gaussWithZero_item)
+        self.fwhmWithZero_item.setText(0, "FWHM")
+        self.fwhmWithZero_item.setText(1, "0")
+        self.fwhmWithZero_item.setHidden(True)
+
         self.cf_items = []
         for i in range(5):
             cf_item = QTreeWidgetItem(self.poly_item)
@@ -82,6 +107,7 @@ class PanelWindow(QWidget):
         self.checkbox_position = position
         self.gauss_checked = False
         self.poly_checked = False
+        self.gaussWithZero_checked = False
 
         self.tree.itemChanged.connect(self.handle_item_changed)
         self.tree.itemDoubleClicked.connect(self.handle_item_double_clicked)
@@ -144,6 +170,23 @@ class PanelWindow(QWidget):
                 self.cf_items[2].setHidden(False)
                 self.cf_items[3].setHidden(False)
             self.handle_data_changed(self.position)
+        if column == 0 and item == self.gaussWithZero_item:
+            hidden = item.checkState(0) == Qt.Unchecked
+            self.gaussWithZero_checked = not hidden
+            if hidden:
+                self.handle_unchecked()
+                self.constantWithZero_item.setHidden(True)
+                self.sigmaWithZero_item.setHidden(True)
+                self.muWithZero_item.setHidden(True)
+                self.fwhmWithZero_item.setHidden(True)
+                self.ynodWithZero_item.setHidden(True)
+            elif not hidden:
+                self.handle_checked()
+                self.constantWithZero_item.setHidden(False)
+                self.sigmaWithZero_item.setHidden(False)
+                self.muWithZero_item.setHidden(False)
+                self.fwhmWithZero_item.setHidden(False)
+                self.ynodWithZero_item.setHidden(False)
 
     def handle_unchecked(self):
         """
@@ -246,6 +289,18 @@ class PanelWindow(QWidget):
                 self.fwhm_item.setText(1, f"{cfs[3]:.3f} ± {errs[3]:.3f}")
             except:
                 pass
+            self.plot_additional_data(ax, v)
+
+        if self.gaussWithZero_checked:
+            v = s(np.array([mvdx, final_slice_values]), u.gaussWithZero, basisFormatter=DosesAndPaths.basis_formatter)
+            v.run()
+            cfs, errs = v.getMeDataForPrinting()
+            self.constantWithZero_item.setText(1, f"{cfs[0]:.3f} ± {errs[0]:.3f}")
+            self.muWithZero_item.setText(1, f"{cfs[1]:.3f} ± {errs[1]:.3f}")
+            self.sigmaWithZero_item.setText(1, f"{cfs[2]:.3f} ± {errs[2]:.3f}")
+            self.ynodWithZero_item.setText(1, f"{cfs[3]:.3f} ± {errs[3]:.3f}")
+            self.fwhmWithZero_item.setText(1, f"{cfs[4]:.3f} ± {errs[4]:.3f}")
+            cfs, errs = v.getMeDataForPrinting()
             self.plot_additional_data(ax, v)
 
         if self.poly_checked:

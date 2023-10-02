@@ -12,6 +12,7 @@ class universalFunctions(enum.Enum):
     neural = 5
     torch = 6
     pycuda = 7
+    gaussWithZero = 8
     residual = 99
 
 
@@ -69,6 +70,20 @@ class universalStats(object):
             self.x = x
             self.y = y
 
+        elif kind == universalFunctions.gaussWithZero:
+            if obj[0] is None:
+                x = np.arange(0, obj[1].shape[0])
+                self.__dict__['isNoneObject'] = True
+                y = obj[1]
+            else:
+                x = obj[0, :]
+                y = obj[1, :]
+            self.basicAssumptions = [0.5 * np.max(y), 0.5 * np.max(x), 1.0, 0.0]
+            self.x = x
+            self.y = y
+            self.__dict__['fitFunc'] = gaussWithZero
+            self.__dict__['callFunc'] = prepareGaussWithZeroOwnX
+
         self.data = None
 
     def run(self):
@@ -85,12 +100,18 @@ class universalStats(object):
                 #print(type(self.data), self.data, self.data(0))
             except RuntimeError:
                 self.data = np.poly1d([1, 0, 0, 0])
+        if self.__dict__['kind'] == universalFunctions.gaussWithZero:
+            try:
+                self.data = self.__dict__['callFunc'](self.x, self.y, self.basicAssumptions)
+            except RuntimeError:
+                self.data = self.basicAssumptions, [0.0, 0.0, 0.0, 0.0]
 
     def axisHelper(self, value):
         return np.round(value / self.__dict__['basisFormatter'])
 
     def getMeDataForMatplotlibPlot(self):
-        if self.__dict__['kind'] == universalFunctions.gauss:
+        if self.__dict__['kind'] == universalFunctions.gauss or \
+                self.__dict__['kind'] == universalFunctions.gaussWithZero:
             if self.__dict__['isNoneObject']:
                 newX = np.linspace(self.x[0], self.x[-1], 10000)
                 newFX = np.linspace(self.x[0], self.x[-1], 10000)
@@ -115,6 +136,12 @@ class universalStats(object):
             return vmin(self.y), vmax(self.y), mean(self.y), median(self.y)
         elif self.__dict__['kind'] == universalFunctions.polynomial:
             return self.data[0], self.data[1], self.data[2], self.data[3]
+        elif self.__dict__['kind'] == universalFunctions.gaussWithZero:
+            #print(self.data)
+            return ([*self.data[0], 2.0*np.sqrt(2*np.log(2))*self.data[0][2]],
+                    [*self.data[1], 2.0*np.sqrt(2*np.log(2))*self.data[1][2]])
+            #return ([*self.data[0], 2.0*np.sqrt(2*np.log(2))*self.data[0][2]],
+            #        [*self.data[1], 2.0*np.sqrt(2*np.log(2))*self.data[1][2]])
 
 
 def gauss(x, *p):
@@ -129,6 +156,19 @@ def gauss(x, *p):
     """
     A, mu, sigma = p
     return A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
+
+def gaussWithZero(x, *p):
+    """
+    Функция, возвращает значение функции Гаусса в точке x с параметрами *p -> A (амплитуда), mu (сдвиг), sigma (сигма)
+    @param x: значение x
+    @type x: float
+    @param p: список параметров Гаусса (амплитуда, сдвиг, сигма)
+    @type p: list
+    @return: вычисленное значение по распределению Гаусса
+    @rtype: float
+    """
+    A, mu, sigma, y0 = p
+    return y0 + A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
 
 
 def mean(x):
@@ -183,6 +223,18 @@ def prepareGaussOwnX(newX, x, p0 = [1., 0., 1.]):
     errs = np.sqrt(np.diag(variation))
     return (cfs, errs,)
 
+def prepareGaussWithZeroOwnX(newX, x, p0 = [1., 0., 1., 0.]):
+    """
+    Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x с адресацией
+    точек массива по newX
+    @param newX: значения по оси X
+    @param x: значение массива в точках оси X
+    @param p0: начальная подгонка, A=1., mu=0., sigma=1.
+    @return:
+    """
+    cfs, variation = curve_fit(gaussWithZero, newX, x, p0=p0)
+    errs = np.sqrt(np.diag(variation))
+    return (cfs, errs,)
 
 def polyFit(x, y, order=3):
     return np.polyfit(x, y, order)
