@@ -299,6 +299,30 @@ class CalcUI(QtWidgets.QMainWindow):
                     GraphicsPlotting.draw_dose_map(normalized_image)
                 # Если выбран 2D Gaussian fit - используем новый код
                 elif selected_mode == "2D Gaussian fit":
+                    # Проверяем, нужно ли выполнить пересчет дозы
+                    recalc_dose = False
+                    if len(DosesAndPaths.z) == 0 or not any(DosesAndPaths.z.flatten() != 0):
+                        recalc_dose = True
+                    else:
+                        recalc_question = QMessageBox.question(
+                            self, 
+                            "Recalculate dose?", 
+                            "Do you want to recalculate the dose before Gaussian fitting?",
+                            QMessageBox.Yes | QMessageBox.No,
+                            QMessageBox.Yes
+                        )
+                        if recalc_question == QMessageBox.Yes:
+                            recalc_dose = True
+                        else:
+                            # Если пользователь ответил "No", прекращаем выполнение функции
+                            return
+                    
+                    # Если нужно пересчитать дозу, вызываем start_calc
+                    if recalc_dose:
+                        self.start_calc()
+                        # Даем немного времени для обновления интерфейса и завершения расчета
+                        QtWidgets.QApplication.processEvents()
+                    
                     # Получаем выбранную область из дозовой карты, используя смещенные координаты
                     # как это сделано в режиме нормализации
                     selected_area = DosesAndPaths.z[ynmin:ynmin+(ymax-ymin), xnmin:xnmin+(xmax-xmin)]
