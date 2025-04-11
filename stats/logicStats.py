@@ -182,6 +182,16 @@ def gaussWithZero(x, *p):
 #         return np.ravel(g)
 
 def gaussian2D(xy, *p):
+    """
+    Функция, возвращает вырожденное (numpy.ravel) значение функции двумерного Гаусса в точках xy для параметров
+    *p -> Амплитуда, начальный X, начальный Y, сигма X, сигма Y, сдвиг (offest)
+    @param xy: значения xy, двумерный массив
+    @type xy: tuple or np.array[2, :]
+    @param p: список параметров гаусса (amplitude, x0, y0, sigma_x, sigma_y, offset)
+    @type p: tuple or list
+    @return: вычисленное значение функции двумерного Гаусса
+    @rtype: np.float64
+    """
     amplitude, xo, yo, sigma_x, sigma_y, offset = p
     x, y = xy
     g = offset + amplitude * np.exp(
@@ -257,6 +267,15 @@ def prepareGaussWithZeroOwnX(newX, x, p0 = [1., 0., 1., 0.]):
     return (cfs, errs,)
 
 def prepareGauss2DFull(newXY, xy, p0 = [1.0, 0.0, 0.0, 1.0, 1.0, 0.0]):
+    """
+    Функция, возвращает коэффициенты [amplitude, x_0, y_0, sigma_x, sigma_y, offset] для двумерной
+    подгонки Гауссом
+    @param newXY: массив точек (двумерный) по осям с координатами
+    @param xy: массив точек (двумерный) значений в соответствующих координатах
+    @param p0: начальная подгонка, параметр не используется
+    @return: пару со значениями и ошибками значений
+    @rtype: tuple
+    """
     # initial_guess = (np.max(Z), args40X[1], args40Y[1], args40X[2], args40Y[2], np.min(Z)
     #print(np.where(xy==np.max(xy)))
     p0 = np.max(xy), np.where(xy==np.max(xy))[0][0], np.where(xy==np.max(xy))[1][0], 1.0, 1.0, np.min(xy)
