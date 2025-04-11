@@ -30,6 +30,7 @@ from Warnings import Warnings
 import Form as fm
 from AxesWindow import AxesWindow
 from stats import stats_ui
+from stats import logicStats
 from IsAdmin import IsAdmin
 
 plt.switch_backend('agg')
@@ -91,7 +92,7 @@ class CalcUI(QtWidgets.QMainWindow):
         self.ui.pushButton_2.clicked.connect(self.get_db_and_setting_window)
         self.ui.pushButton_3.clicked.connect(self.cropping_by_button)
         self.ui.pushButton_5.clicked.connect(SaveLoadData.save_as_excel_file)
-        self.ui.pushButton_6.clicked.connect(self.normalize_by_selected_zone)
+        self.ui.pushButton_6.clicked.connect(self.zone_operations)
 
         # @todo: implement 30 seconds timeout for connection as suggested in friendly messages
         # issued by .exe strange behaviour
@@ -105,6 +106,9 @@ class CalcUI(QtWidgets.QMainWindow):
             pass
 
         IsAdmin.check_admin()
+
+        # Изменяем текст кнопки на "Zone Operations"
+        self.ui.pushButton_6.setText("Zone Operations")
 
     def get_irrad_film_file(self):
         """
@@ -246,9 +250,11 @@ class CalcUI(QtWidgets.QMainWindow):
         self.start_pos = None
         self.end_pos = None
 
-    def normalize_by_selected_zone(self):
+    def zone_operations(self):
         """
-        Normalize the image by the selected zone using the RectangleSelector extents
+        Perform operations on selected zone using the RectangleSelector extents:
+        1. Normalize image by coefficient
+        2. Fit 2D Gaussian and analyze parameters
         """
         if self.start_pos is not None and self.end_pos is not None and self.start_pos[0] != self.end_pos[0]:
             try:
@@ -293,9 +299,6 @@ class CalcUI(QtWidgets.QMainWindow):
                     GraphicsPlotting.draw_dose_map(normalized_image)
                 # Если выбран 2D Gaussian fit - используем новый код
                 elif selected_mode == "2D Gaussian fit":
-                    from stats import logicStats
-                    import numpy as np
-                    
                     # Получаем выбранную область из дозовой карты
                     selected_area = DosesAndPaths.z[ymin:ymax, xmin:xmax]
                     
@@ -308,16 +311,40 @@ class CalcUI(QtWidgets.QMainWindow):
                     try:
                         params, errors = logicStats.prepareGauss2DFull(xy, selected_area)
                         
+                        # Создаем форматтер для преобразования пикселей в мм
+                        formatter = lambda x, _: round(x * DosesAndPaths.basis_formatter, 2)
+                        
                         # Создаем строку для отображения результатов
                         result_text = f"2D Gaussian parameters:\n\n"
                         result_text += f"Amplitude: {params[0]:.4f} ± {errors[0]:.4f}\n"
-                        result_text += f"X₀: {params[1]:.4f} ± {errors[1]:.4f}\n"
-                        result_text += f"Y₀: {params[2]:.4f} ± {errors[2]:.4f}\n"
-                        result_text += f"σₓ: {params[3]:.4f} ± {errors[3]:.4f}\n"
-                        result_text += f"σᵧ: {params[4]:.4f} ± {errors[4]:.4f}\n"
+                        
+                        # Пересчитанные в мм координаты центра
+                        x0_mm = formatter(params[1], None)
+                        y0_mm = formatter(params[2], None)
+                        x0_err_mm = formatter(errors[1], None)
+                        y0_err_mm = formatter(errors[2], None)
+                        
+                        result_text += f"X₀: {params[1]:.4f} px ({x0_mm:.4f} mm) ± {errors[1]:.4f} px ({x0_err_mm:.4f} mm)\n"
+                        result_text += f"Y₀: {params[2]:.4f} px ({y0_mm:.4f} mm) ± {errors[2]:.4f} px ({y0_err_mm:.4f} mm)\n"
+                        
+                        # Пересчитанные в мм сигмы
+                        sigma_x_mm = formatter(params[3], None)
+                        sigma_y_mm = formatter(params[4], None)
+                        sigma_x_err_mm = formatter(errors[3], None)
+                        sigma_y_err_mm = formatter(errors[4], None)
+                        
+                        result_text += f"σₓ: {params[3]:.4f} px ({sigma_x_mm:.4f} mm) ± {errors[3]:.4f} px ({sigma_x_err_mm:.4f} mm)\n"
+                        result_text += f"σᵧ: {params[4]:.4f} px ({sigma_y_mm:.4f} mm) ± {errors[4]:.4f} px ({sigma_y_err_mm:.4f} mm)\n"
                         result_text += f"Offset: {params[5]:.4f} ± {errors[5]:.4f}\n\n"
-                        result_text += f"FWHM_x: {2.355*params[3]:.4f}\n"
-                        result_text += f"FWHM_y: {2.355*params[4]:.4f}\n"
+                        
+                        # Пересчитанные в мм FWHM
+                        fwhm_x = 2.355 * params[3]
+                        fwhm_y = 2.355 * params[4]
+                        fwhm_x_mm = formatter(fwhm_x, None)
+                        fwhm_y_mm = formatter(fwhm_y, None)
+                        
+                        result_text += f"FWHM_x: {fwhm_x:.4f} px ({fwhm_x_mm:.4f} mm)\n"
+                        result_text += f"FWHM_y: {fwhm_y:.4f} px ({fwhm_y_mm:.4f} mm)\n"
                         
                         # Показываем результаты в текстовом диалоге
                         result_dialog = QDialog(self)
