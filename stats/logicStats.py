@@ -157,18 +157,37 @@ def gauss(x, *p):
     A, mu, sigma = p
     return A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
 
+
 def gaussWithZero(x, *p):
     """
-    Функция, возвращает значение функции Гаусса в точке x с параметрами *p -> A (амплитуда), mu (сдвиг), sigma (сигма)
+    Функция, возвращает значение функции Гаусса в точке x с параметрами *p -> A (амплитуда), mu (сдвиг), sigma (сигма),
+    y0 - сдвиг по y
     @param x: значение x
     @type x: float
-    @param p: список параметров Гаусса (амплитуда, сдвиг, сигма)
+    @param p: список параметров Гаусса (амплитуда, сдвиг x, сигма, сдвиг y)
     @type p: list
     @return: вычисленное значение по распределению Гаусса
     @rtype: float
     """
     A, mu, sigma, y0 = p
     return y0 + A * np.exp(-(x - mu) ** 2 / (2. * sigma ** 2))
+
+
+# def gaussian2D(xy, *p):
+#         x, y = xy
+#         amplitude, xo, yo, sigma_x, sigma_y, offset = p
+#         g = offset + amplitude * np.exp(
+#             -(((x - xo)**2 ) / (2 * sigma_x )
+#               + ((y - yo)**2 ) / (2 * sigma_y )))
+#         return np.ravel(g)
+
+def gaussian2D(xy, *p):
+    amplitude, xo, yo, sigma_x, sigma_y, offset = p
+    x, y = xy
+    g = offset + amplitude * np.exp(
+            -(((x - xo) ** 2) / (2 * sigma_x ** 2)
+              + ((y - yo) ** 2) / (2 * sigma_y ** 2)))
+    return np.ravel(g)
 
 
 def mean(x):
@@ -223,6 +242,7 @@ def prepareGaussOwnX(newX, x, p0 = [1., 0., 1.]):
     errs = np.sqrt(np.diag(variation))
     return (cfs, errs,)
 
+
 def prepareGaussWithZeroOwnX(newX, x, p0 = [1., 0., 1., 0.]):
     """
     Функция, возвращает коэффициенты [A, mu, sigma] и их ошибки, по заданному распределению массива x с адресацией
@@ -235,6 +255,15 @@ def prepareGaussWithZeroOwnX(newX, x, p0 = [1., 0., 1., 0.]):
     cfs, variation = curve_fit(gaussWithZero, newX, x, p0=p0)
     errs = np.sqrt(np.diag(variation))
     return (cfs, errs,)
+
+def prepareGauss2DFull(newXY, xy, p0 = [1.0, 0.0, 0.0, 1.0, 1.0, 0.0]):
+    # initial_guess = (np.max(Z), args40X[1], args40Y[1], args40X[2], args40Y[2], np.min(Z)
+    #print(np.where(xy==np.max(xy)))
+    p0 = np.max(xy), np.where(xy==np.max(xy))[0][0], np.where(xy==np.max(xy))[1][0], 1.0, 1.0, np.min(xy)
+    xyN = np.ravel(xy)
+    cfs, variation = curve_fit(gaussian2D, newXY, xyN, p0=p0)
+    errs = np.sqrt(np.diag(variation))
+    return (cfs, errs)
 
 def polyFit(x, y, order=3):
     return np.polyfit(x, y, order)
