@@ -1,0 +1,9 @@
+{
+    "facility_name": "Co-60 (MRRC)",
+    "lot_number": "01171702",
+    "hours_after_irrad": "24",
+    "dose_limit": 50.0,
+    "optical_density": "useDummy",
+    "fit_funtion": "useCurveFit",
+    "curve_fitting": "useSerejaVariant"
+}
