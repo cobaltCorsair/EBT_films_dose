@@ -1,8 +1,8 @@
 from pymongo import MongoClient
-try :
-    from backports import configparser
-except ModuleNotFoundError:
+try:
     import configparser
+except ImportError:
+    from backports import configparser
 import os
 
 path = r'db_config.ini'

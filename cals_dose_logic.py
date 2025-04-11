@@ -617,15 +617,23 @@ class CalcUI(QtWidgets.QMainWindow):
 
 
 if __name__ == "__main__":
-    if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
-        import pyi_splash
-
-        pyi_splash.close()
+    # Удаляем старый код обработки splash-экрана
+    # if '_PYIBoot_SPLASH' in os.environ and importlib.util.find_spec("pyi_splash"):
+    #     import pyi_splash
+    #     pyi_splash.close()
 
     basedir = os.path.dirname(__file__)
     app = QtWidgets.QApplication([])
     app.setStyle("Fusion")
+    
+    # Инициализируем и показываем наш новый splash-экран
+    from splash_screen import SplashScreen
+    splash = SplashScreen()
+    splash.show()
+    
+    # Устанавливаем таймер для обработки событий, чтобы splash отображался
     app.processEvents()
+    
     app_icon = QIcon(os.path.join(basedir, "icon", "icon64x64.ico"))
     app.setWindowIcon(app_icon)
     application = CalcUI()
@@ -638,5 +646,9 @@ if __name__ == "__main__":
     application.setWindowTitle("Dose calculator")
     # set minimum size
     application.setMinimumSize(1200, 800)
+    
+    # Закрываем splash-экран перед показом основного приложения
+    splash.close_splash()
+    
     application.show()
     sys.exit(app.exec())
