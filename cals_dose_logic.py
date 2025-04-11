@@ -299,8 +299,9 @@ class CalcUI(QtWidgets.QMainWindow):
                     GraphicsPlotting.draw_dose_map(normalized_image)
                 # Если выбран 2D Gaussian fit - используем новый код
                 elif selected_mode == "2D Gaussian fit":
-                    # Получаем выбранную область из дозовой карты
-                    selected_area = DosesAndPaths.z[ymin:ymax, xmin:xmax]
+                    # Получаем выбранную область из дозовой карты, используя смещенные координаты
+                    # как это сделано в режиме нормализации
+                    selected_area = DosesAndPaths.z[ynmin:ynmin+(ymax-ymin), xnmin:xnmin+(xmax-xmin)]
                     
                     # Создаем координатную сетку для 2D гаусса
                     x = np.arange(0, selected_area.shape[1])

@@ -276,13 +276,52 @@ def prepareGauss2DFull(newXY, xy, p0 = [1.0, 0.0, 0.0, 1.0, 1.0, 0.0]):
     @return: пару со значениями и ошибками значений
     @rtype: tuple
     """
-    # initial_guess = (np.max(Z), args40X[1], args40Y[1], args40X[2], args40Y[2], np.min(Z)
-    #print(np.where(xy==np.max(xy)))
-    p0 = np.max(xy), np.where(xy==np.max(xy))[0][0], np.where(xy==np.max(xy))[1][0], 1.0, 1.0, np.min(xy)
-    xyN = np.ravel(xy)
-    cfs, variation = curve_fit(gaussian2D, newXY, xyN, p0=p0)
-    errs = np.sqrt(np.diag(variation))
-    return (cfs, errs)
+    try:
+        # Находим более надежное начальное приближение
+        # Амплитуда - максимальное значение минус минимальное
+        amplitude = np.max(xy) - np.min(xy)
+        
+        # Координаты максимума
+        max_indices = np.unravel_index(np.argmax(xy), xy.shape)
+        x0, y0 = max_indices[1], max_indices[0]  # меняем местами, так как numpy использует [y, x]
+        
+        # Оценка размера пика - используем примерно 1/4 размера области
+        sigma_x_init = max(1.0, xy.shape[1] / 4.0)
+        sigma_y_init = max(1.0, xy.shape[0] / 4.0)
+        
+        # Оценка фона - минимальное значение
+        offset = np.min(xy)
+        
+        # Теперь создаем начальное приближение
+        p0 = amplitude, x0, y0, sigma_x_init, sigma_y_init, offset
+        
+        # Подготавливаем данные
+        xyN = np.ravel(xy)
+        
+        # Устанавливаем границы параметров для обеспечения физического смысла
+        # [амплитуда, x0, y0, sigma_x, sigma_y, offset]
+        lower_bounds = [0, 0, 0, 0.1, 0.1, -np.inf]
+        upper_bounds = [np.inf, xy.shape[1], xy.shape[0], xy.shape[1], xy.shape[0], np.inf]
+        bounds = (lower_bounds, upper_bounds)
+        
+        # Пытаемся подобрать параметры с увеличенным maxfev
+        cfs, variation = curve_fit(
+            gaussian2D, 
+            newXY, 
+            xyN, 
+            p0=p0,
+            bounds=bounds,
+            maxfev=5000,  # Увеличиваем maxfev с 1400 до 5000
+            method='trf'  # Используем более надежный метод
+        )
+        
+        # Вычисляем ошибки
+        errs = np.sqrt(np.diag(variation))
+        return (cfs, errs)
+    except Exception as e:
+        # В случае ошибки, возвращаем начальное приближение и нулевые ошибки
+        print(f"Warning: Failed to fit 2D Gaussian: {str(e)}. Using initial guess.")
+        return (p0, np.zeros_like(p0))
 
 def polyFit(x, y, order=3):
     return np.polyfit(x, y, order)
