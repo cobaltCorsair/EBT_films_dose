@@ -6,9 +6,10 @@ import sys
 import ctypes
 import matplotlib.pyplot as plt
 import numpy as np
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QFont
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QFileDialog, QInputDialog
+from PyQt5.QtWidgets import (QFileDialog, QInputDialog, QDialog, QVBoxLayout, 
+                          QHBoxLayout, QPushButton, QPlainTextEdit, QMessageBox, QApplication)
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.widgets import RectangleSelector
@@ -258,24 +259,97 @@ class CalcUI(QtWidgets.QMainWindow):
                 xmin, xmax, ymin, ymax = int(xmin), int(xmax), int(ymin), int(ymax)
                 xnmin = xmin - int(self.pic_ax.get_xlim()[0])
                 ynmin = ymin - int(self.pic_ax.get_ylim()[1])
-                curCf = LogicParser.getCurrentAverageByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
-                curMax = LogicParser.getCurrentMaximumByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
-                curMin = LogicParser.getCurrentMinimumByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
-                cf, ok_pressed = QInputDialog.getDouble(self,
-                                                        "Get coefficient",
-                                                        "Max: %1.4f\nMin: %1.4f\nValue of cf:" % (curMax, curMin, ),
-                                                        curCf,
-                                                        float('-inf'),
-                                                        float('inf'),
-                                                        3)
+                
+                # Добавляем диалог для выбора режима работы: нормализация или 2D Gauss
+                mode_options = ["Normalize by coefficient", "2D Gaussian fit"]
+                selected_mode, ok_pressed = QInputDialog.getItem(self, 
+                                                               "Select mode", 
+                                                               "Choose operation:", 
+                                                               mode_options, 
+                                                               0, 
+                                                               False)
                 if not ok_pressed:
                     return
+                
+                # Если выбрана нормализация - используем старый код
+                if selected_mode == "Normalize by coefficient":
+                    curCf = LogicParser.getCurrentAverageByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
+                    curMax = LogicParser.getCurrentMaximumByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
+                    curMin = LogicParser.getCurrentMinimumByZone(DosesAndPaths.z, ynmin, xnmin, ymax - ymin, xmax - xmin)
+                    cf, ok_pressed = QInputDialog.getDouble(self,
+                                                            "Get coefficient",
+                                                            "Max: %1.4f\nMin: %1.4f\nValue of cf:" % (curMax, curMin, ),
+                                                            curCf,
+                                                            float('-inf'),
+                                                            float('inf'),
+                                                            3)
+                    if not ok_pressed:
+                        return
 
-                # Normalize the image using the selected zone (order for numpy array y, x, h, w)
-                normalized_image = LogicParser.getNormalizedByZone(DosesAndPaths.z, ynmin, xnmin,
-                                                                   ymax - ymin, xmax - xmin, cf=cf)
-                DosesAndPaths.z = normalized_image
-                GraphicsPlotting.draw_dose_map(normalized_image)
+                    # Normalize the image using the selected zone (order for numpy array y, x, h, w)
+                    normalized_image = LogicParser.getNormalizedByZone(DosesAndPaths.z, ynmin, xnmin,
+                                                                       ymax - ymin, xmax - xmin, cf=cf)
+                    DosesAndPaths.z = normalized_image
+                    GraphicsPlotting.draw_dose_map(normalized_image)
+                # Если выбран 2D Gaussian fit - используем новый код
+                elif selected_mode == "2D Gaussian fit":
+                    from stats import logicStats
+                    import numpy as np
+                    
+                    # Получаем выбранную область из дозовой карты
+                    selected_area = DosesAndPaths.z[ymin:ymax, xmin:xmax]
+                    
+                    # Создаем координатную сетку для 2D гаусса
+                    x = np.arange(0, selected_area.shape[1])
+                    y = np.arange(0, selected_area.shape[0])
+                    xy = np.meshgrid(x, y)
+                    
+                    # Вычисляем параметры 2D гаусса
+                    try:
+                        params, errors = logicStats.prepareGauss2DFull(xy, selected_area)
+                        
+                        # Создаем строку для отображения результатов
+                        result_text = f"2D Gaussian parameters:\n\n"
+                        result_text += f"Amplitude: {params[0]:.4f} ± {errors[0]:.4f}\n"
+                        result_text += f"X₀: {params[1]:.4f} ± {errors[1]:.4f}\n"
+                        result_text += f"Y₀: {params[2]:.4f} ± {errors[2]:.4f}\n"
+                        result_text += f"σₓ: {params[3]:.4f} ± {errors[3]:.4f}\n"
+                        result_text += f"σᵧ: {params[4]:.4f} ± {errors[4]:.4f}\n"
+                        result_text += f"Offset: {params[5]:.4f} ± {errors[5]:.4f}\n\n"
+                        result_text += f"FWHM_x: {2.355*params[3]:.4f}\n"
+                        result_text += f"FWHM_y: {2.355*params[4]:.4f}\n"
+                        
+                        # Показываем результаты в текстовом диалоге
+                        result_dialog = QDialog(self)
+                        result_dialog.setWindowTitle("2D Gaussian Fit Results")
+                        layout = QVBoxLayout(result_dialog)
+                        
+                        text_edit = QPlainTextEdit()
+                        text_edit.setReadOnly(True)
+                        text_edit.setPlainText(result_text)
+                        font = QFont("Monospace")
+                        font.setStyleHint(QFont.TypeWriter)
+                        text_edit.setFont(font)
+                        
+                        copy_button = QPushButton("Copy to Clipboard")
+                        copy_button.clicked.connect(lambda: QApplication.clipboard().setText(result_text))
+                        
+                        close_button = QPushButton("Close")
+                        close_button.clicked.connect(result_dialog.close)
+                        
+                        button_layout = QHBoxLayout()
+                        button_layout.addWidget(copy_button)
+                        button_layout.addWidget(close_button)
+                        
+                        layout.addWidget(text_edit)
+                        layout.addLayout(button_layout)
+                        
+                        result_dialog.setLayout(layout)
+                        result_dialog.resize(400, 400)
+                        result_dialog.exec_()
+                        
+                    except Exception as e:
+                        QMessageBox.critical(self, "Error", f"Failed to fit 2D Gaussian: {str(e)}")
             except TypeError:
                 Warnings.inform_about_normalize()
         else:
