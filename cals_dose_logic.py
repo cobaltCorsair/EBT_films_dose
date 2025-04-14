@@ -329,13 +329,16 @@ class CalcUI(QtWidgets.QMainWindow):
                     
                     # Создаем координатную сетку для 2D гаусса
                     # Используем реальные координаты от углов выделения
-                    x = np.arange(xnmin, xnmin + selected_area.shape[1])
-                    y = np.arange(ynmin, ynmin + selected_area.shape[0])
+                    x = np.arange(0, selected_area.shape[1])
+                    y = np.arange(0, selected_area.shape[0])
                     xy = np.meshgrid(x, y)
-                    
+
                     # Вычисляем параметры 2D гаусса
                     try:
                         params, errors = logicStats.prepareGauss2DFull(xy, selected_area)
+
+                        params[1] += xnmin
+                        params[2] += ynmin
                         
                         # Создаем форматтер для преобразования пикселей в мм
                         formatter = lambda x, _: round(x * DosesAndPaths.basis_formatter, 2)
