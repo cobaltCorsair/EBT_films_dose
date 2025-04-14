@@ -328,8 +328,9 @@ class CalcUI(QtWidgets.QMainWindow):
                     selected_area = DosesAndPaths.z[ynmin:ynmin+(ymax-ymin), xnmin:xnmin+(xmax-xmin)]
                     
                     # Создаем координатную сетку для 2D гаусса
-                    x = np.arange(0, selected_area.shape[1])
-                    y = np.arange(0, selected_area.shape[0])
+                    # Используем реальные координаты от углов выделения
+                    x = np.arange(xnmin, xnmin + selected_area.shape[1])
+                    y = np.arange(ynmin, ynmin + selected_area.shape[0])
                     xy = np.meshgrid(x, y)
                     
                     # Вычисляем параметры 2D гаусса
