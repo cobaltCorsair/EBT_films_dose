@@ -267,7 +267,7 @@ class CalcUI(QtWidgets.QMainWindow):
                 ynmin = ymin - int(self.pic_ax.get_ylim()[1])
                 
                 # Добавляем диалог для выбора режима работы: нормализация или 2D Gauss
-                mode_options = ["Normalize by coefficient", "2D Gaussian fit"]
+                mode_options = ["Normalize by coefficient", "2D Gaussian fit", "2D Gaussian fit (original coordinates)"]
                 selected_mode, ok_pressed = QInputDialog.getItem(self, 
                                                                "Select mode", 
                                                                "Choose operation:", 
@@ -298,7 +298,7 @@ class CalcUI(QtWidgets.QMainWindow):
                     DosesAndPaths.z = normalized_image
                     GraphicsPlotting.draw_dose_map(normalized_image)
                 # Если выбран 2D Gaussian fit - используем новый код
-                elif selected_mode == "2D Gaussian fit":
+                elif selected_mode in ["2D Gaussian fit", "2D Gaussian fit (original coordinates)"]:
                     # Проверяем, нужно ли выполнить пересчет дозы
                     recalc_dose = False
                     if len(DosesAndPaths.z) == 0 or not any(DosesAndPaths.z.flatten() != 0):
@@ -328,14 +328,17 @@ class CalcUI(QtWidgets.QMainWindow):
                     selected_area = DosesAndPaths.z[ynmin:ynmin+(ymax-ymin), xnmin:xnmin+(xmax-xmin)]
                     
                     # Создаем координатную сетку для 2D гаусса
-                    # Используем реальные координаты от углов выделения
-                    x = np.arange(xnmin, xnmin + selected_area.shape[1])
-                    y = np.arange(ynmin, ynmin + selected_area.shape[0])
+                    x = np.arange(0, selected_area.shape[1])
+                    y = np.arange(0, selected_area.shape[0])
                     xy = np.meshgrid(x, y)
                     
                     # Вычисляем параметры 2D гаусса
                     try:
                         params, errors = logicStats.prepareGauss2DFull(xy, selected_area)
+                        
+                        # Корректируем координаты центра, добавляя смещение выделенной области
+                        params[1] += xnmin
+                        params[2] += ynmin
                         
                         # Создаем форматтер для преобразования пикселей в мм
                         formatter = lambda x, _: round(x * DosesAndPaths.basis_formatter, 2)
@@ -350,8 +353,25 @@ class CalcUI(QtWidgets.QMainWindow):
                         x0_err_mm = formatter(errors[1], None)
                         y0_err_mm = formatter(errors[2], None)
                         
-                        result_text += f"X₀: {params[1]:.4f} px ({x0_mm:.4f} mm) ± {errors[1]:.4f} px ({x0_err_mm:.4f} mm)\n"
-                        result_text += f"Y₀: {params[2]:.4f} px ({y0_mm:.4f} mm) ± {errors[2]:.4f} px ({y0_err_mm:.4f} mm)\n"
+                        # Если выбран режим с оригинальными координатами - показываем оригинальные координаты
+                        if selected_mode == "2D Gaussian fit (original coordinates)" and DosesAndPaths.irrad_film_array is not None:
+                            # Исходные координаты обрезанного изображения
+                            crop_start_x = int(self.pic_ax.get_xlim()[0])
+                            crop_start_y = int(self.pic_ax.get_ylim()[1])
+                            
+                            # Посчитаем координаты центра гаусса в исходном изображении
+                            original_x0 = params[1] + crop_start_x
+                            original_y0 = params[2] + crop_start_y
+                            
+                            # Пересчитаем в мм
+                            original_x0_mm = formatter(original_x0, None)
+                            original_y0_mm = formatter(original_y0, None)
+                            
+                            result_text += f"X₀: {original_x0:.4f} px ({original_x0_mm:.4f} mm) ± {errors[1]:.4f} px ({x0_err_mm:.4f} mm)\n"
+                            result_text += f"Y₀: {original_y0:.4f} px ({original_y0_mm:.4f} mm) ± {errors[2]:.4f} px ({y0_err_mm:.4f} mm)\n"
+                        else:
+                            result_text += f"X₀: {params[1]:.4f} px ({x0_mm:.4f} mm) ± {errors[1]:.4f} px ({x0_err_mm:.4f} mm)\n"
+                            result_text += f"Y₀: {params[2]:.4f} px ({y0_mm:.4f} mm) ± {errors[2]:.4f} px ({y0_err_mm:.4f} mm)\n"
                         
                         # Пересчитанные в мм сигмы
                         sigma_x_mm = formatter(params[3], None)
@@ -370,7 +390,7 @@ class CalcUI(QtWidgets.QMainWindow):
                         fwhm_y_mm = formatter(fwhm_y, None)
                         
                         result_text += f"FWHM_x: {fwhm_x:.4f} px ({fwhm_x_mm:.4f} mm)\n"
-                        result_text += f"FWHM_y: {fwhm_y:.4f} px ({fwhm_y_mm:.4f} mm)\n"
+                        result_text += f"FWHM_y: {fwhm_y:.4f} px ({fwhm_y_mm:.4f} mm)"
                         
                         # Показываем результаты в текстовом диалоге
                         result_dialog = QDialog(self)
